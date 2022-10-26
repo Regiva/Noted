@@ -1,10 +1,6 @@
-package com.noted.features.note.data
+package com.noted.features.note.data.datasource
 
-import androidx.room.Dao
-import androidx.room.Delete
-import androidx.room.Insert
-import androidx.room.OnConflictStrategy
-import androidx.room.Query
+import androidx.room.*
 import com.noted.features.note.domain.model.Note
 import kotlinx.coroutines.flow.Flow
 
