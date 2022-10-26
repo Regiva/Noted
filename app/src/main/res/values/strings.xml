@@ -1,3 +1,8 @@
 <resources>
     <string name="app_name">Noted</string>
+    <string name="noted_title">Title</string>
+    <string name="noted_date">Date</string>
+    <string name="noted_color">Color</string>
+    <string name="noted_ascending">Ascending</string>
+    <string name="noted_descending">Descending</string>
 </resources>
