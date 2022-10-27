@@ -1,4 +1,4 @@
-package com.noted.features.note.presentation.components
+package com.noted.features.note.presentation.note.components
 
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.*
@@ -17,10 +17,12 @@ import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.drawscope.clipPath
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.core.graphics.ColorUtils
+import com.noted.R
 import com.noted.features.note.domain.model.Note
 
 @Composable
@@ -85,7 +87,7 @@ fun NoteItem(
         ) {
             Icon(
                 imageVector = Icons.Default.Delete,
-                contentDescription = "Delete note",
+                contentDescription = stringResource(R.string.noted_delete_note),
             )
         }
     }

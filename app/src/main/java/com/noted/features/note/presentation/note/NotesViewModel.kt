@@ -1,4 +1,4 @@
-package com.noted.features.note.presentation
+package com.noted.features.note.presentation.note
 
 import androidx.lifecycle.viewModelScope
 import com.noted.core.base.BaseViewModel
@@ -23,18 +23,18 @@ class NotesViewModel @Inject constructor(
     private var getNotesJob: Job? = null
 
     init {
-        getNotes(NoteOrder.Date(OrderType.Descending ))
+        getNotes(NoteOrder.Date(OrderType.Descending))
     }
 
-    fun onEvent(event: NotesEvent) {
+    fun onEvent(event: NotesUiEvents) {
         when (event) {
-            is NotesEvent.DeleteNote -> {
+            is NotesUiEvents.DeleteNote -> {
                 viewModelScope.launch {
                     notesUseCases.deleteNote(event.note)
                     recentlyDeletedNote = event.note
                 }
             }
-            is NotesEvent.Order -> {
+            is NotesUiEvents.Order -> {
                 if (state.value.noteOrder::class == event.noteOrder::class &&
                     state.value.noteOrder.orderType == event.noteOrder.orderType
                 ) {
@@ -42,13 +42,13 @@ class NotesViewModel @Inject constructor(
                 }
                 getNotes(event.noteOrder)
             }
-            is NotesEvent.RestoreNote -> {
+            is NotesUiEvents.RestoreNote -> {
                 viewModelScope.launch {
                     notesUseCases.addNote(recentlyDeletedNote ?: return@launch)
                     recentlyDeletedNote = null
                 }
             }
-            is NotesEvent.ToggleOrderSection -> {
+            is NotesUiEvents.ToggleOrderSection -> {
                 _state.value = state.value.copy(
                     isOrderSectionVisible = !state.value.isOrderSectionVisible
                 )
@@ -69,4 +69,17 @@ class NotesViewModel @Inject constructor(
             }
             .launchIn(viewModelScope)
     }
+}
+
+data class NotesState(
+    val notes: List<Note> = emptyList(),
+    val noteOrder: NoteOrder = NoteOrder.Date(OrderType.Descending),
+    val isOrderSectionVisible: Boolean = false,
+)
+
+sealed class NotesUiEvents {
+    data class Order(val noteOrder: NoteOrder) : NotesUiEvents()
+    data class DeleteNote(val note: Note) : NotesUiEvents()
+    object RestoreNote : NotesUiEvents()
+    object ToggleOrderSection : NotesUiEvents()
 }

@@ -1,4 +1,4 @@
-package com.noted.features.note
+package com.noted.features.note.presentation.note
 
 import androidx.compose.animation.*
 import androidx.compose.foundation.clickable
@@ -17,10 +17,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
-import com.noted.features.note.presentation.NotesEvent
-import com.noted.features.note.presentation.NotesViewModel
-import com.noted.features.note.presentation.components.NoteItem
-import com.noted.features.note.presentation.components.OrderSection
+import com.noted.features.note.presentation.note.components.NoteItem
+import com.noted.features.note.presentation.note.components.OrderSection
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -58,7 +56,7 @@ fun NotesScreen(
                     text = "Your note",
                     style = MaterialTheme.typography.bodyMedium,
                 )
-                IconButton(onClick = { viewModel.onEvent(NotesEvent.ToggleOrderSection) }) {
+                IconButton(onClick = { viewModel.onEvent(NotesUiEvents.ToggleOrderSection) }) {
                     Icon(
                         imageVector = Icons.Default.Sort,
                         contentDescription = "Sort",
@@ -76,7 +74,7 @@ fun NotesScreen(
                         .padding(vertical = 16.dp),
                     noteOrder = state.noteOrder,
                     onOrderChange = {
-                        viewModel.onEvent(NotesEvent.Order(it))
+                        viewModel.onEvent(NotesUiEvents.Order(it))
                     }
                 )
             }
@@ -91,14 +89,14 @@ fun NotesScreen(
                                 // TODO: open note with animation
                             },
                         onDeleteClick = {
-                            viewModel.onEvent(NotesEvent.DeleteNote(note))
+                            viewModel.onEvent(NotesUiEvents.DeleteNote(note))
                             scope.launch {
                                 val result = snackbarHostState.showSnackbar(
                                     message = "Note deleted",
                                     actionLabel = "Undo",
                                 )
                                 if (result == SnackbarResult.ActionPerformed) {
-                                    viewModel.onEvent(NotesEvent.RestoreNote)
+                                    viewModel.onEvent(NotesUiEvents.RestoreNote)
                                 }
                             }
                         }

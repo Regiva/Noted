@@ -1,4 +1,4 @@
-package com.noted.features.note.presentation.components
+package com.noted.features.note.presentation.note.components
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.runtime.Composable
