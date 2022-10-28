@@ -22,6 +22,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import com.noted.R
 import com.noted.features.note.domain.model.Note
+import com.noted.features.note.presentation.addeditnote.components.TransparentHintTextField
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 
@@ -37,7 +38,7 @@ fun AddEditNoteScreen(
 
     val noteBackgroundAnimatable = remember {
         Animatable(
-            Color(if (noteColor != -1) noteColor else viewModel.state.noteColor)
+            Color(if (noteColor != -1) noteColor else viewModel.state.noteColor.toArgb())
         )
     }
 
@@ -76,60 +77,78 @@ fun AddEditNoteScreen(
                 .background(noteBackgroundAnimatable.value)
                 .padding(16.dp),
         ) {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(8.dp),
-                horizontalArrangement = Arrangement.SpaceBetween,
-            ) {
-                Note.noteColors.forEach { color ->
-                    val colorInt = color.toArgb()
-                    Box(
-                        modifier = Modifier
-                            .size(50.dp)
-                            .shadow(15.dp, CircleShape)
-                            .clip(CircleShape)
-                            .background(color)
-                            .border(
-                                width = 3.dp,
-                                color = if (viewModel.state.noteColor == colorInt) {
-                                    Color.Black
-                                } else {
-                                    Color.Transparent
-                                },
-                                shape = CircleShape,
+            ColorSection(
+                noteColor = state.noteColor,
+                onChangeColor = { color ->
+                    viewModel.onEvent(AddEditNoteScreenEvent.ChangeColor(color))
+                },
+                onAnimateColor = { color ->
+                    scope.launch {
+                        noteBackgroundAnimatable.animateTo(
+                            targetValue = color,
+                            animationSpec = tween(
+                                durationMillis = 500,
                             )
-                            .clickable {
-                                scope.launch {
-                                    noteBackgroundAnimatable.animateTo(
-                                        targetValue = color,
-                                        animationSpec = tween(
-                                            durationMillis = 500,
-                                        )
-                                    )
-                                }
-                                viewModel.onEvent(AddEditNoteScreenEvent.ChangeColor(colorInt))
-                            },
-                    )
+                        )
+                    }
                 }
-            }
+            )
             Spacer(modifier = Modifier.height(16.dp))
-            TextField(
+            TransparentHintTextField(
                 value = state.noteTitleTextFieldValue,
+                hint = "Enter title...",
                 onValueChange = {
                     viewModel.onEvent(AddEditNoteScreenEvent.EnteredTitle(it.text))
                 },
-                singleLine = true,
-                textStyle = MaterialTheme.typography.bodyMedium,
+                onFocusChange = {},
+                textStyle = MaterialTheme.typography.bodyLarge,
             )
             Spacer(modifier = Modifier.height(16.dp))
-            TextField(
+            TransparentHintTextField(
                 value = state.noteContentTextFieldValue,
+                hint = "Enter content...",
                 onValueChange = {
                     viewModel.onEvent(AddEditNoteScreenEvent.EnteredContent(it.text))
                 },
-                singleLine = true,
+                onFocusChange = {},
                 textStyle = MaterialTheme.typography.bodyMedium,
+            )
+        }
+    }
+}
+
+@Composable
+private fun ColorSection(
+    noteColor: Color,
+    onChangeColor: (Color) -> Unit,
+    onAnimateColor: (Color) -> Unit,
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(8.dp),
+        horizontalArrangement = Arrangement.SpaceBetween,
+    ) {
+        Note.noteColors.forEach { color ->
+            Box(
+                modifier = Modifier
+                    .size(50.dp)
+                    .shadow(15.dp, CircleShape)
+                    .clip(CircleShape)
+                    .background(color)
+                    .border(
+                        width = 3.dp,
+                        color = if (noteColor == color) {
+                            Color.Black
+                        } else {
+                            Color.Transparent
+                        },
+                        shape = CircleShape,
+                    )
+                    .clickable {
+                        onAnimateColor.invoke(color)
+                        onChangeColor.invoke(color)
+                    },
             )
         }
     }

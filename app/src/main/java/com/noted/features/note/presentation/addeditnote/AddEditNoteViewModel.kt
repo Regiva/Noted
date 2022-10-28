@@ -1,6 +1,8 @@
 package com.noted.features.note.presentation.addeditnote
 
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
+import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.viewModelScope
@@ -26,7 +28,7 @@ class AddEditNoteViewModel @Inject constructor(
     val eventFlow = _eventFlow.asSharedFlow()
 
     init {
-        savedStateHandle.get<Int>("note_id")?.let { noteId ->
+        savedStateHandle.get<Int>("noteId")?.let { noteId ->
             if (noteId != -1) {
                 viewModelScope.launch {
                     notesUseCases.getNote(noteId)?.also { note ->
@@ -39,7 +41,7 @@ class AddEditNoteViewModel @Inject constructor(
                                 noteContentTextFieldValue = state.noteContentTextFieldValue.copy(
                                     text = note.content
                                 ),
-                                noteColor = note.color,
+                                noteColor = Color(note.color),
                             )
                         }
                     }
@@ -58,14 +60,20 @@ class AddEditNoteViewModel @Inject constructor(
             is AddEditNoteScreenEvent.EnteredContent -> {
                 updateState {
                     copy(
-                        noteContentTextFieldValue = noteContentTextFieldValue.copy(text = event.value)
+                        noteContentTextFieldValue = noteContentTextFieldValue.copy(
+                            text = event.value,
+                            selection = TextRange(event.value.length),
+                        )
                     )
                 }
             }
             is AddEditNoteScreenEvent.EnteredTitle -> {
                 updateState {
                     copy(
-                        noteTitleTextFieldValue = noteTitleTextFieldValue.copy(text = event.value)
+                        noteTitleTextFieldValue = noteTitleTextFieldValue.copy(
+                            text = event.value,
+                            selection = TextRange(event.value.length),
+                        )
                     )
                 }
             }
@@ -77,7 +85,7 @@ class AddEditNoteViewModel @Inject constructor(
                                 title = state.noteTitleTextFieldValue.text,
                                 content = state.noteContentTextFieldValue.text,
                                 timestamp = System.currentTimeMillis(),
-                                color = state.noteColor,
+                                color = state.noteColor.toArgb(),
                                 id = currentNoteId
                             )
                         )
@@ -103,12 +111,12 @@ class AddEditNoteViewModel @Inject constructor(
 data class AddEditNoteState(
     val noteTitleTextFieldValue: TextFieldValue = TextFieldValue(text = "title"),
     val noteContentTextFieldValue: TextFieldValue = TextFieldValue(text = "content"),
-    val noteColor: Int = Note.noteColors.random().toArgb(),
+    val noteColor: Color = Note.noteColors.random(),
 )
 
 sealed class AddEditNoteScreenEvent {
     data class EnteredTitle(val value: String) : AddEditNoteScreenEvent()
     data class EnteredContent(val value: String) : AddEditNoteScreenEvent()
-    data class ChangeColor(val color: Int) : AddEditNoteScreenEvent()
+    data class ChangeColor(val color: Color) : AddEditNoteScreenEvent()
     object SaveNote : AddEditNoteScreenEvent()
 }
