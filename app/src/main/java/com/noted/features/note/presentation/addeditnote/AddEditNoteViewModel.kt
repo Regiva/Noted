@@ -5,9 +5,12 @@ import androidx.compose.ui.text.input.TextFieldValue
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.viewModelScope
 import com.noted.core.base.presentation.StatefulViewModel
+import com.noted.features.note.domain.model.InvalidNoteException
 import com.noted.features.note.domain.model.Note
 import com.noted.features.note.domain.usecase.NoteUseCases
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -19,37 +22,74 @@ class AddEditNoteViewModel @Inject constructor(
 
     private var currentNoteId: Int? = null
 
+    private val _eventFlow = MutableSharedFlow<UiEvent>()
+    val eventFlow = _eventFlow.asSharedFlow()
+
     init {
         savedStateHandle.get<Int>("note_id")?.let { noteId ->
             if (noteId != -1) {
                 viewModelScope.launch {
                     notesUseCases.getNote(noteId)?.also { note ->
                         currentNoteId = note.id
-                        // TODO:
+                        updateState {
+                            copy(
+                                noteTitleTextFieldValue = state.noteTitleTextFieldValue.copy(
+                                    text = note.title
+                                ),
+                                noteContentTextFieldValue = state.noteContentTextFieldValue.copy(
+                                    text = note.content
+                                ),
+                                noteColor = note.color,
+                            )
+                        }
                     }
                 }
             }
         }
     }
 
-    fun onEvent(event: AddEditNoteUiEvent) {
+    fun onEvent(event: AddEditNoteScreenEvent) {
         when (event) {
-            is AddEditNoteUiEvent.ChangeColor -> {
+            is AddEditNoteScreenEvent.ChangeColor -> {
                 updateState {
                     copy(noteColor = event.color)
                 }
             }
-            is AddEditNoteUiEvent.EnteredContent -> {
-
+            is AddEditNoteScreenEvent.EnteredContent -> {
+                updateState {
+                    copy(
+                        noteContentTextFieldValue = noteContentTextFieldValue.copy(text = event.value)
+                    )
+                }
             }
-            is AddEditNoteUiEvent.EnteredTitle -> {
-
+            is AddEditNoteScreenEvent.EnteredTitle -> {
+                updateState {
+                    copy(
+                        noteTitleTextFieldValue = noteTitleTextFieldValue.copy(text = event.value)
+                    )
+                }
             }
-            is AddEditNoteUiEvent.SaveNote -> {
-
-            }
-            is AddEditNoteUiEvent.ShowSnackbar -> {
-
+            is AddEditNoteScreenEvent.SaveNote -> {
+                viewModelScope.launch {
+                    try {
+                        notesUseCases.addNote(
+                            Note(
+                                title = state.noteTitleTextFieldValue.text,
+                                content = state.noteContentTextFieldValue.text,
+                                timestamp = System.currentTimeMillis(),
+                                color = state.noteColor,
+                                id = currentNoteId
+                            )
+                        )
+                        _eventFlow.emit(UiEvent.SaveNote)
+                    } catch (e: InvalidNoteException) {
+                        _eventFlow.emit(
+                            UiEvent.ShowSnackbar(
+                                message = e.message ?: "Couldn't save note"
+                            )
+                        )
+                    }
+                }
             }
         }
     }
@@ -61,21 +101,14 @@ class AddEditNoteViewModel @Inject constructor(
 }
 
 data class AddEditNoteState(
-    val noteTitleTextFieldValue: TextFieldValue = TextFieldValue(),
-    val noteContentTextFieldValue: TextFieldValue = TextFieldValue(),
+    val noteTitleTextFieldValue: TextFieldValue = TextFieldValue(text = "title"),
+    val noteContentTextFieldValue: TextFieldValue = TextFieldValue(text = "content"),
     val noteColor: Int = Note.noteColors.random().toArgb(),
 )
 
-sealed class AddEditNoteUiEvent {
-    data class ShowSnackbar(val message: String) : AddEditNoteUiEvent()
-    data class EnteredTitle(val value: String) : AddEditNoteUiEvent()
-
-    //    data class ChangeTitleFocus(val focused: Boolean): AddEditNoteUiEvent()
-//    data class ChangeTitleFocus(val focusState: FocusState): AddEditNoteUiEvents()
-    data class EnteredContent(val value: String) : AddEditNoteUiEvent()
-
-    //    data class ChangeContentFocus(val focused: Boolean): AddEditNoteUiEvent()
-//    data class ChangeContentFocus(val focusState: FocusState): AddEditNoteUiEvents()
-    data class ChangeColor(val color: Int) : AddEditNoteUiEvent()
-    object SaveNote : AddEditNoteUiEvent()
+sealed class AddEditNoteScreenEvent {
+    data class EnteredTitle(val value: String) : AddEditNoteScreenEvent()
+    data class EnteredContent(val value: String) : AddEditNoteScreenEvent()
+    data class ChangeColor(val color: Int) : AddEditNoteScreenEvent()
+    object SaveNote : AddEditNoteScreenEvent()
 }

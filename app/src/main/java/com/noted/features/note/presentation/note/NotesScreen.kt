@@ -9,14 +9,13 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Sort
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
+import com.noted.core.navigation.Screen
 import com.noted.features.note.presentation.note.components.NoteItem
 import com.noted.features.note.presentation.note.components.OrderSection
 import kotlinx.coroutines.launch
@@ -27,7 +26,7 @@ fun NotesScreen(
     navController: NavController,
     viewModel: NotesViewModel = hiltViewModel(),
 ) {
-    val state = viewModel.state.value
+    val state by viewModel.stateFlow.collectAsState()
 //    val scaffoldState = rememberScaffoldState() TODO check material3 guides
     val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
@@ -35,7 +34,7 @@ fun NotesScreen(
     Scaffold(
         floatingActionButton = {
             FloatingActionButton(
-                onClick = { /*TODO*/ },
+                onClick = { navController.navigate(Screen.AddEditNoteScreen.route) },
                 containerColor = MaterialTheme.colorScheme.primary,
             ) {
                 Icon(imageVector = Icons.Default.Add, contentDescription = "Add note")
@@ -56,7 +55,7 @@ fun NotesScreen(
                     text = "Your note",
                     style = MaterialTheme.typography.bodyMedium,
                 )
-                IconButton(onClick = { viewModel.onEvent(NotesUiEvents.ToggleOrderSection) }) {
+                IconButton(onClick = { viewModel.onEvent(NotesScreenEvents.ToggleOrderSection) }) {
                     Icon(
                         imageVector = Icons.Default.Sort,
                         contentDescription = "Sort",
@@ -74,7 +73,7 @@ fun NotesScreen(
                         .padding(vertical = 16.dp),
                     noteOrder = state.noteOrder,
                     onOrderChange = {
-                        viewModel.onEvent(NotesUiEvents.Order(it))
+                        viewModel.onEvent(NotesScreenEvents.Order(it))
                     }
                 )
             }
@@ -87,16 +86,21 @@ fun NotesScreen(
                             .fillMaxWidth()
                             .clickable {
                                 // TODO: open note with animation
+                                // TODO: change params
+                                navController.navigate(
+                                    Screen.AddEditNoteScreen.route +
+                                            "?noteId=${note.id}&noteColor=${note.color}"
+                                )
                             },
                         onDeleteClick = {
-                            viewModel.onEvent(NotesUiEvents.DeleteNote(note))
+                            viewModel.onEvent(NotesScreenEvents.DeleteNote(note))
                             scope.launch {
                                 val result = snackbarHostState.showSnackbar(
                                     message = "Note deleted",
                                     actionLabel = "Undo",
                                 )
                                 if (result == SnackbarResult.ActionPerformed) {
-                                    viewModel.onEvent(NotesUiEvents.RestoreNote)
+                                    viewModel.onEvent(NotesScreenEvents.RestoreNote)
                                 }
                             }
                         }

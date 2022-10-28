@@ -10,19 +10,19 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Save
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
+import com.noted.R
 import com.noted.features.note.domain.model.Note
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -32,28 +32,40 @@ fun AddEditNoteScreen(
     noteColor: Int,
     viewModel: AddEditNoteViewModel = hiltViewModel(),
 ) {
-    val state = viewModel.state.value
+    val state by viewModel.stateFlow.collectAsState()
     val snackbarHost = remember { SnackbarHostState() }
 
     val noteBackgroundAnimatable = remember {
         Animatable(
-            Color(if (noteColor != -1) noteColor else viewModel.state.value.noteColor.toArgb())
+            Color(if (noteColor != -1) noteColor else viewModel.state.noteColor)
         )
     }
 
     val scope = rememberCoroutineScope()
 
     LaunchedEffect(key1 = true) {
-        
+        viewModel.eventFlow.collectLatest { event ->
+            when (event) {
+                is AddEditNoteViewModel.UiEvent.SaveNote -> {
+                    navController.navigateUp()
+                }
+                is AddEditNoteViewModel.UiEvent.ShowSnackbar -> {
+                    snackbarHost.showSnackbar(event.message)
+                }
+            }
+        }
     }
 
     Scaffold(
         floatingActionButton = {
             FloatingActionButton(
-                onClick = { viewModel.onEvent(AddEditNoteUiEvents.SaveNote) },
+                onClick = { viewModel.onEvent(AddEditNoteScreenEvent.SaveNote) },
                 containerColor = MaterialTheme.colorScheme.primary,
             ) {
-                Icon(imageVector = Icons.Default.Save, contentDescription = "Save note")
+                Icon(
+                    imageVector = Icons.Default.Save,
+                    contentDescription = stringResource(R.string.noted_save_note),
+                )
             }
         },
     ) { padding ->
@@ -79,7 +91,7 @@ fun AddEditNoteScreen(
                             .background(color)
                             .border(
                                 width = 3.dp,
-                                color = if (viewModel.state.value.noteColor == color) {
+                                color = if (viewModel.state.noteColor == colorInt) {
                                     Color.Black
                                 } else {
                                     Color.Transparent
@@ -95,7 +107,7 @@ fun AddEditNoteScreen(
                                         )
                                     )
                                 }
-                                viewModel.onEvent(AddEditNoteUiEvents.ChangeColor(colorInt))
+                                viewModel.onEvent(AddEditNoteScreenEvent.ChangeColor(colorInt))
                             },
                     )
                 }
@@ -104,7 +116,7 @@ fun AddEditNoteScreen(
             TextField(
                 value = state.noteTitleTextFieldValue,
                 onValueChange = {
-                    viewModel.onEvent(AddEditNoteUiEvents.EnteredTitle(it.text))
+                    viewModel.onEvent(AddEditNoteScreenEvent.EnteredTitle(it.text))
                 },
                 singleLine = true,
                 textStyle = MaterialTheme.typography.bodyMedium,
@@ -113,7 +125,7 @@ fun AddEditNoteScreen(
             TextField(
                 value = state.noteContentTextFieldValue,
                 onValueChange = {
-                    viewModel.onEvent(AddEditNoteUiEvents.EnteredContent(it.text))
+                    viewModel.onEvent(AddEditNoteScreenEvent.EnteredContent(it.text))
                 },
                 singleLine = true,
                 textStyle = MaterialTheme.typography.bodyMedium,
