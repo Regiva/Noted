@@ -9,7 +9,10 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Sort
 import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
@@ -24,11 +27,11 @@ import kotlinx.coroutines.launch
 @Composable
 fun NotesScreen(
     navController: NavController,
+    snackbarHostState: SnackbarHostState,
     viewModel: NotesViewModel = hiltViewModel(),
 ) {
     val state by viewModel.stateFlow.collectAsState()
 //    val scaffoldState = rememberScaffoldState() TODO check material3 guides
-    val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
 
     Scaffold(
@@ -40,6 +43,7 @@ fun NotesScreen(
                 Icon(imageVector = Icons.Default.Add, contentDescription = "Add note")
             }
         },
+        snackbarHost = { SnackbarHost(hostState = snackbarHostState) },
     ) { padding ->
         Column(
             modifier = Modifier
@@ -98,6 +102,7 @@ fun NotesScreen(
                                 val result = snackbarHostState.showSnackbar(
                                     message = "Note deleted",
                                     actionLabel = "Undo",
+                                    duration = SnackbarDuration.Short,
                                 )
                                 if (result == SnackbarResult.ActionPerformed) {
                                     viewModel.onEvent(NotesScreenEvents.RestoreNote)

@@ -29,11 +29,11 @@ import kotlinx.coroutines.launch
 @Composable
 fun AddEditNoteScreen(
     navController: NavController,
+    snackbarHostState: SnackbarHostState,
     noteColor: Int,
     viewModel: AddEditNoteViewModel = hiltViewModel(),
 ) {
     val state by viewModel.stateFlow.collectAsState()
-    val snackbarHost = remember { SnackbarHostState() }
 
     val noteBackgroundAnimatable = remember {
         Animatable(
@@ -50,7 +50,7 @@ fun AddEditNoteScreen(
                     navController.navigateUp()
                 }
                 is AddEditNoteViewModel.UiEvent.ShowSnackbar -> {
-                    snackbarHost.showSnackbar(event.message)
+                    snackbarHostState.showSnackbar(event.message)
                 }
             }
         }
@@ -68,6 +68,7 @@ fun AddEditNoteScreen(
                 )
             }
         },
+        snackbarHost = { SnackbarHost(hostState = snackbarHostState) },
     ) { padding ->
         Column(
             modifier = Modifier
