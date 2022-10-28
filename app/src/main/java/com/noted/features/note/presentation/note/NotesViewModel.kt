@@ -1,7 +1,7 @@
 package com.noted.features.note.presentation.note
 
 import androidx.lifecycle.viewModelScope
-import com.noted.core.base.BaseViewModel
+import com.noted.core.base.presentation.StatefulViewModel
 import com.noted.features.note.domain.model.Note
 import com.noted.features.note.domain.usecase.NoteUseCases
 import com.noted.features.note.domain.util.NoteOrder
@@ -16,7 +16,7 @@ import javax.inject.Inject
 @HiltViewModel
 class NotesViewModel @Inject constructor(
     private val notesUseCases: NoteUseCases,
-) : BaseViewModel<NotesState>(NotesState()) {
+) : StatefulViewModel<NotesState>(NotesState()) {
 
     private var recentlyDeletedNote: Note? = null
 
@@ -35,8 +35,8 @@ class NotesViewModel @Inject constructor(
                 }
             }
             is NotesUiEvents.Order -> {
-                if (state.value.noteOrder::class == event.noteOrder::class &&
-                    state.value.noteOrder.orderType == event.noteOrder.orderType
+                if (state.noteOrder::class == event.noteOrder::class &&
+                    state.noteOrder.orderType == event.noteOrder.orderType
                 ) {
                     return
                 }
@@ -49,9 +49,9 @@ class NotesViewModel @Inject constructor(
                 }
             }
             is NotesUiEvents.ToggleOrderSection -> {
-                _state.value = state.value.copy(
-                    isOrderSectionVisible = !state.value.isOrderSectionVisible
-                )
+                updateState {
+                    copy(isOrderSectionVisible = !state.isOrderSectionVisible)
+                }
             }
         }
     }

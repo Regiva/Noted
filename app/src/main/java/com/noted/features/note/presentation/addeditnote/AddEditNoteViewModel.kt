@@ -1,10 +1,10 @@
 package com.noted.features.note.presentation.addeditnote
 
-import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.viewModelScope
-import com.noted.core.base.BaseViewModel
+import com.noted.core.base.presentation.StatefulViewModel
 import com.noted.features.note.domain.model.Note
 import com.noted.features.note.domain.usecase.NoteUseCases
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -15,7 +15,7 @@ import javax.inject.Inject
 class AddEditNoteViewModel @Inject constructor(
     private val notesUseCases: NoteUseCases,
     savedStateHandle: SavedStateHandle,
-) : BaseViewModel<AddEditNoteState>(AddEditNoteState()) {
+) : StatefulViewModel<AddEditNoteState>(AddEditNoteState()) {
 
     private var currentNoteId: Int? = null
 
@@ -32,47 +32,50 @@ class AddEditNoteViewModel @Inject constructor(
         }
     }
 
-    fun onEvent(events: AddEditNoteUiEvents) {
-        when(events) {
-            is AddEditNoteUiEvents.ChangeColor -> {
+    fun onEvent(event: AddEditNoteUiEvent) {
+        when (event) {
+            is AddEditNoteUiEvent.ChangeColor -> {
+                updateState {
+                    copy(noteColor = event.color)
+                }
+            }
+            is AddEditNoteUiEvent.EnteredContent -> {
 
             }
-            is AddEditNoteUiEvents.ChangeContentFocus -> {
+            is AddEditNoteUiEvent.EnteredTitle -> {
 
             }
-            is AddEditNoteUiEvents.ChangeTitleFocus -> {
+            is AddEditNoteUiEvent.SaveNote -> {
 
             }
-            is AddEditNoteUiEvents.EnteredContent -> {
-
-            }
-            is AddEditNoteUiEvents.EnteredTitle -> {
-
-            }
-            is AddEditNoteUiEvents.SaveNote -> {
-
-            }
-            is AddEditNoteUiEvents.ShowSnackbar -> {
+            is AddEditNoteUiEvent.ShowSnackbar -> {
 
             }
         }
+    }
+
+    sealed class UiEvent {
+        data class ShowSnackbar(val message: String) : UiEvent()
+        object SaveNote : UiEvent()
     }
 }
 
 data class AddEditNoteState(
     val noteTitleTextFieldValue: TextFieldValue = TextFieldValue(),
     val noteContentTextFieldValue: TextFieldValue = TextFieldValue(),
-    val noteColor: Color = Note.noteColors.random(),
+    val noteColor: Int = Note.noteColors.random().toArgb(),
 )
 
-sealed class AddEditNoteUiEvents {
-    data class ShowSnackbar(val message: String) : AddEditNoteUiEvents()
-    data class EnteredTitle(val value: String): AddEditNoteUiEvents()
-    data class ChangeTitleFocus(val focused: Boolean): AddEditNoteUiEvents()
+sealed class AddEditNoteUiEvent {
+    data class ShowSnackbar(val message: String) : AddEditNoteUiEvent()
+    data class EnteredTitle(val value: String) : AddEditNoteUiEvent()
+
+    //    data class ChangeTitleFocus(val focused: Boolean): AddEditNoteUiEvent()
 //    data class ChangeTitleFocus(val focusState: FocusState): AddEditNoteUiEvents()
-    data class EnteredContent(val value: String): AddEditNoteUiEvents()
-    data class ChangeContentFocus(val focused: Boolean): AddEditNoteUiEvents()
+    data class EnteredContent(val value: String) : AddEditNoteUiEvent()
+
+    //    data class ChangeContentFocus(val focused: Boolean): AddEditNoteUiEvent()
 //    data class ChangeContentFocus(val focusState: FocusState): AddEditNoteUiEvents()
-    data class ChangeColor(val color: Int): AddEditNoteUiEvents()
-    object SaveNote: AddEditNoteUiEvents()
+    data class ChangeColor(val color: Int) : AddEditNoteUiEvent()
+    object SaveNote : AddEditNoteUiEvent()
 }
