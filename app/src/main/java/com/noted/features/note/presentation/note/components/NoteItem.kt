@@ -2,8 +2,6 @@ package com.noted.features.note.presentation.note.components
 
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.*
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -24,6 +22,7 @@ import androidx.compose.ui.unit.dp
 import androidx.core.graphics.ColorUtils
 import com.noted.R
 import com.noted.features.note.domain.model.Note
+import com.noted.ui.icon.NotedIcons
 
 @Composable
 fun NoteItem(
@@ -86,7 +85,7 @@ fun NoteItem(
             modifier = Modifier.align(Alignment.BottomEnd)
         ) {
             Icon(
-                imageVector = Icons.Default.Delete,
+                imageVector = NotedIcons.Delete,
                 tint = MaterialTheme.colorScheme.onSurface,
                 contentDescription = stringResource(R.string.noted_delete_note),
             )
