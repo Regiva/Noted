@@ -1,5 +1,7 @@
 <resources>
     <string name="app_name">Noted</string>
+
+    <!-- notes -->
     <string name="noted_title">Title</string>
     <string name="noted_date">Date</string>
     <string name="noted_color">Color</string>
@@ -10,4 +12,8 @@
     <string name="noted_sort">Sort</string>
     <string name="noted_your_notes">Your notes</string>
     <string name="noted_add_note">Add note</string>
+
+    <!-- reminder -->
+    <string name="reminder_notification_channel_id">137</string>
+    <string name="reminder_notification_channel_name">Reminder</string>
 </resources>
