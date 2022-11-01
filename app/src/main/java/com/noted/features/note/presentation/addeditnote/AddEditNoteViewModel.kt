@@ -109,8 +109,8 @@ class AddEditNoteViewModel @Inject constructor(
 }
 
 data class AddEditNoteState(
-    val noteTitleTextFieldValue: TextFieldValue = TextFieldValue(text = "title"),
-    val noteContentTextFieldValue: TextFieldValue = TextFieldValue(text = "content"),
+    val noteTitleTextFieldValue: TextFieldValue = TextFieldValue(),
+    val noteContentTextFieldValue: TextFieldValue = TextFieldValue(),
     val noteColor: Color = Note.noteColors.random(),
 )
 

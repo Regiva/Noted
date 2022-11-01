@@ -7,4 +7,7 @@
     <string name="noted_descending">Descending</string>
     <string name="noted_delete_note">Delete note</string>
     <string name="noted_save_note">Save note</string>
+    <string name="noted_sort">Sort</string>
+    <string name="noted_your_notes">Your notes</string>
+    <string name="noted_add_note">Add note</string>
 </resources>
