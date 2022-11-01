@@ -99,9 +99,8 @@ fun AddEditNoteScreen(
                     viewModel.onEvent(AddEditNoteScreenEvent.EnteredTitle(it.text))
                 },
                 onFocusChange = {},
-                textStyle = MaterialTheme.typography.bodyLarge,
+                textStyle = MaterialTheme.typography.titleMedium,
             )
-            Spacer(modifier = Modifier.height(16.dp))
             TransparentHintTextField(
                 value = state.noteContentTextFieldValue,
                 hint = "Enter content...",

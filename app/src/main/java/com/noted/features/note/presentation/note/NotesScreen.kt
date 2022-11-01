@@ -1,10 +1,12 @@
 package com.noted.features.note.presentation.note
 
 import androidx.compose.animation.*
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.staggeredgrid.LazyVerticalStaggeredGrid
+import androidx.compose.foundation.lazy.staggeredgrid.StaggeredGridCells
+import androidx.compose.foundation.lazy.staggeredgrid.items
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
@@ -69,8 +71,10 @@ fun NotesScreen(
                 onNoteClick = { note ->
                     // TODO: open note with animation
                     // TODO: change params
-                    navController.navigate(Screen.AddEditNoteScreen.route +
-                            "?noteId=${note.id}&noteColor=${note.color}")
+                    navController.navigate(
+                        Screen.AddEditNoteScreen.route +
+                                "?noteId=${note.id}&noteColor=${note.color}"
+                    )
                 },
                 onDeleteNoteClick = { note ->
                     viewModel.onEvent(NotesScreenEvents.DeleteNote(note))
@@ -90,13 +94,18 @@ fun NotesScreen(
     }
 }
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
-private fun NotesScreenNotesList(
+fun NotesScreenNotesList(
     notes: List<Note>,
     onNoteClick: (Note) -> Unit,
     onDeleteNoteClick: (Note) -> Unit,
 ) {
-    LazyColumn(modifier = Modifier.fillMaxSize()) {
+    LazyVerticalStaggeredGrid(
+        columns = StaggeredGridCells.Fixed(2),
+        verticalArrangement = Arrangement.spacedBy(8.dp),
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
         items(notes) { note ->
             NoteItem(
                 note = note,
@@ -105,7 +114,6 @@ private fun NotesScreenNotesList(
                     .clickable { onNoteClick(note) },
                 onDeleteClick = { onDeleteNoteClick(note) },
             )
-            Spacer(modifier = Modifier.height(16.dp))
         }
     }
 }
