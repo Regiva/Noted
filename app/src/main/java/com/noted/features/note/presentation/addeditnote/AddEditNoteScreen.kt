@@ -7,8 +7,6 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Save
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
@@ -23,6 +21,7 @@ import androidx.navigation.NavController
 import com.noted.R
 import com.noted.features.note.domain.model.Note
 import com.noted.features.note.presentation.addeditnote.components.TransparentHintTextField
+import com.noted.ui.icon.NotedIcons
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 
@@ -61,10 +60,9 @@ fun AddEditNoteScreen(
         floatingActionButton = {
             FloatingActionButton(
                 onClick = { viewModel.onEvent(AddEditNoteScreenEvent.SaveNote) },
-                containerColor = MaterialTheme.colorScheme.primary,
             ) {
                 Icon(
-                    imageVector = Icons.Default.Save,
+                    imageVector = NotedIcons.Save,
                     contentDescription = stringResource(R.string.noted_save_note),
                 )
             }

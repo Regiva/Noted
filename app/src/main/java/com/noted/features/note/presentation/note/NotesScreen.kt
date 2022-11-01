@@ -5,9 +5,6 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.Sort
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
@@ -21,6 +18,7 @@ import androidx.navigation.NavController
 import com.noted.core.navigation.Screen
 import com.noted.features.note.presentation.note.components.NoteItem
 import com.noted.features.note.presentation.note.components.OrderSection
+import com.noted.ui.icon.NotedIcons
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -38,9 +36,11 @@ fun NotesScreen(
         floatingActionButton = {
             FloatingActionButton(
                 onClick = { navController.navigate(Screen.AddEditNoteScreen.route) },
-                containerColor = MaterialTheme.colorScheme.primary,
             ) {
-                Icon(imageVector = Icons.Default.Add, contentDescription = "Add note")
+                Icon(
+                    imageVector = NotedIcons.Add,
+                    contentDescription = "Add note",
+                )
             }
         },
         snackbarHost = { SnackbarHost(hostState = snackbarHostState) },
@@ -56,12 +56,18 @@ fun NotesScreen(
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Text(
-                    text = "Your note",
-                    style = MaterialTheme.typography.bodyMedium,
+                    text = "Your notes",
+                    style = MaterialTheme.typography.headlineLarge,
+                    color = MaterialTheme.colorScheme.onBackground,
                 )
-                IconButton(onClick = { viewModel.onEvent(NotesScreenEvents.ToggleOrderSection) }) {
+                IconButton(
+                    onClick = { viewModel.onEvent(NotesScreenEvents.ToggleOrderSection) },
+                    colors = IconButtonDefaults.iconButtonColors(
+                        contentColor = MaterialTheme.colorScheme.onBackground,
+                    )
+                ) {
                     Icon(
-                        imageVector = Icons.Default.Sort,
+                        imageVector = NotedIcons.Sort,
                         contentDescription = "Sort",
                     )
                 }
