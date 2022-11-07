@@ -2,24 +2,29 @@ package com.noted.features.note.presentation.addeditnote
 
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
-import androidx.compose.ui.text.TextRange
-import androidx.compose.ui.text.input.TextFieldValue
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.viewModelScope
 import com.noted.core.base.presentation.StatefulViewModel
 import com.noted.features.note.domain.model.InvalidNoteException
 import com.noted.features.note.domain.model.Note
 import com.noted.features.note.domain.usecase.NoteUseCases
+import com.noted.features.reminder.ReminderManager
+import com.noted.features.reminder.domain.model.Day
+import com.noted.features.reminder.domain.model.Reminder
+import com.noted.features.reminder.domain.model.Repeat
+import com.noted.features.reminder.domain.model.Time
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.launch
+import java.time.LocalTime
 import javax.inject.Inject
 
 @HiltViewModel
 class AddEditNoteViewModel @Inject constructor(
-    private val notesUseCases: NoteUseCases,
     savedStateHandle: SavedStateHandle,
+    private val notesUseCases: NoteUseCases,
+    private val reminderManager: ReminderManager,
 ) : StatefulViewModel<AddEditNoteState>(AddEditNoteState()) {
 
     private var currentNoteId: Int? = null
@@ -35,12 +40,9 @@ class AddEditNoteViewModel @Inject constructor(
                         currentNoteId = note.id
                         updateState {
                             copy(
-                                noteTitleTextFieldValue = state.noteTitleTextFieldValue.copy(
-                                    text = note.title
-                                ),
-                                noteContentTextFieldValue = state.noteContentTextFieldValue.copy(
-                                    text = note.content
-                                ),
+                                note = note,
+                                noteTitle = note.title,
+                                noteContent = note.content,
                                 noteColor = Color(note.color),
                             )
                         }
@@ -57,33 +59,26 @@ class AddEditNoteViewModel @Inject constructor(
                     copy(noteColor = event.color)
                 }
             }
+
             is AddEditNoteScreenEvent.EnteredContent -> {
                 updateState {
-                    copy(
-                        noteContentTextFieldValue = noteContentTextFieldValue.copy(
-                            text = event.value,
-                            selection = TextRange(event.value.length),
-                        )
-                    )
+                    copy(noteContent = event.value)
                 }
             }
+
             is AddEditNoteScreenEvent.EnteredTitle -> {
                 updateState {
-                    copy(
-                        noteTitleTextFieldValue = noteTitleTextFieldValue.copy(
-                            text = event.value,
-                            selection = TextRange(event.value.length),
-                        )
-                    )
+                    copy(noteTitle = event.value)
                 }
             }
+
             is AddEditNoteScreenEvent.SaveNote -> {
                 viewModelScope.launch {
                     try {
                         notesUseCases.addNote(
                             Note(
-                                title = state.noteTitleTextFieldValue.text,
-                                content = state.noteContentTextFieldValue.text,
+                                title = state.noteTitle,
+                                content = state.noteContent,
                                 timestamp = System.currentTimeMillis(),
                                 color = state.noteColor.toArgb(),
                                 id = currentNoteId
@@ -99,6 +94,40 @@ class AddEditNoteViewModel @Inject constructor(
                     }
                 }
             }
+
+            is AddEditNoteScreenEvent.OpenCloseReminderDialog -> {
+                updateState {
+                    copy(
+                        reminderState = state.reminderState.copy(
+                            visible = !state.reminderState.visible,
+                        )
+                    )
+                }
+            }
+
+            is AddEditNoteScreenEvent.EnteredReminder -> {
+                val enteredTime = LocalTime.of(event.time.getHour(), event.time.getMinute())
+                updateState {
+                    copy(
+                        reminderState = state.reminderState.copy(
+                            error = event.day == Day.Today && enteredTime < LocalTime.now()
+                        )
+                    )
+                }
+            }
+
+            is AddEditNoteScreenEvent.AddReminder -> {
+                state.note?.let { note ->
+                    reminderManager.startReminder(
+                        reminder = Reminder.from(
+                            day = event.day,
+                            time = event.time,
+                            repeat = event.repeat,
+                        ),
+                        note = note,
+                    )
+                }
+            }
         }
     }
 
@@ -109,9 +138,17 @@ class AddEditNoteViewModel @Inject constructor(
 }
 
 data class AddEditNoteState(
-    val noteTitleTextFieldValue: TextFieldValue = TextFieldValue(),
-    val noteContentTextFieldValue: TextFieldValue = TextFieldValue(),
+    val note: Note? = null,
+    val noteTitle: String = "",
+    val noteContent: String = "",
     val noteColor: Color = Note.noteColors.random(),
+    val reminderState: ReminderState = ReminderState(),
+)
+
+data class ReminderState(
+    val visible: Boolean = false,
+    val reminder: Reminder = Reminder(),
+    val error: Boolean = false,
 )
 
 sealed class AddEditNoteScreenEvent {
@@ -119,4 +156,11 @@ sealed class AddEditNoteScreenEvent {
     data class EnteredContent(val value: String) : AddEditNoteScreenEvent()
     data class ChangeColor(val color: Color) : AddEditNoteScreenEvent()
     object SaveNote : AddEditNoteScreenEvent()
+    object OpenCloseReminderDialog : AddEditNoteScreenEvent()
+    data class EnteredReminder(val day: Day, val time: Time) : AddEditNoteScreenEvent()
+    data class AddReminder(
+        val day: Day,
+        val time: Time,
+        val repeat: Repeat,
+    ) : AddEditNoteScreenEvent()
 }

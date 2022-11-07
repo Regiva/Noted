@@ -8,43 +8,40 @@ import android.content.Intent
 import androidx.core.app.NotificationCompat
 import com.noted.MainActivity
 import com.noted.R
-import javax.inject.Inject
 
-class AlarmReceiver @Inject constructor(
-    private val notificationManager: NotificationManager,
-) : BroadcastReceiver() {
+class AlarmReceiver : BroadcastReceiver() {
 
     override fun onReceive(context: Context, intent: Intent) {
+        val title = intent.getStringExtra("note_title") ?: "haha"
+        val content = intent.getStringExtra("note_content") ?: "loser"
+        val notificationManager =
+            context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
         notificationManager.sendReminderNotification(
             context = context,
-            channelId = context.getString(R.string.reminder_notification_channel_id)
+            channelId = context.getString(R.string.reminder_notification_channel_id),
+            title = title,
+            content = content,
         )
     }
 }
 
-// TODO: clear the code below
 fun NotificationManager.sendReminderNotification(
     context: Context,
     channelId: String,
+    title: String,
+    content: String,
 ) {
     val contentIntent = Intent(context, MainActivity::class.java)
     val pendingIntent = PendingIntent.getActivity(
         context,
         1,
         contentIntent,
-        PendingIntent.FLAG_UPDATE_CURRENT
+        PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
     )
     val builder = NotificationCompat.Builder(context, channelId)
-        .setContentTitle("Title")
-//        .setContentTitle(context.getString(R.string.title_notification_reminder))
-        .setContentText("Content")
-//        .setContentText(context.getString(R.string.description_notification_reminder))
+        .setContentTitle(title)
         .setSmallIcon(R.drawable.ic_launcher)
-        .setStyle(
-            NotificationCompat.BigTextStyle()
-                .bigText("woohoo")
-//                .bigText(context.getString(R.string.description_notification_reminder))
-        )
+        .setStyle(NotificationCompat.BigTextStyle().bigText(content))
         .setContentIntent(pendingIntent)
         .setAutoCancel(true)
 

@@ -20,6 +20,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import com.noted.R
 import com.noted.features.note.domain.model.Note
+import com.noted.features.note.presentation.addeditnote.components.ReminderDialog
 import com.noted.features.note.presentation.addeditnote.components.TransparentHintTextField
 import com.noted.ui.icon.NotedIcons
 import kotlinx.coroutines.flow.collectLatest
@@ -75,6 +76,31 @@ fun AddEditNoteScreen(
                 .background(noteBackgroundAnimatable.value)
                 .padding(16.dp),
         ) {
+            Row(modifier = Modifier.fillMaxWidth()) {
+                IconButton(
+                    onClick = { viewModel.onEvent(AddEditNoteScreenEvent.OpenCloseReminderDialog) }
+                ) {
+                    Icon(
+                        imageVector = NotedIcons.AddAlert,
+                        tint = MaterialTheme.colorScheme.primary,
+                        contentDescription = stringResource(R.string.noted_pin_note),
+                    )
+                }
+            }
+            if (state.reminderState.visible) {
+                ReminderDialog(
+                    onDismiss = {
+                        viewModel.onEvent(AddEditNoteScreenEvent.OpenCloseReminderDialog)
+                    },
+                    onConfirm = { day, time, repeat ->
+                        viewModel.onEvent(AddEditNoteScreenEvent.AddReminder(day, time, repeat))
+                    },
+                    onEntered = { day, time ->
+                        viewModel.onEvent(AddEditNoteScreenEvent.EnteredReminder(day, time))
+                    },
+                    error = state.reminderState.error,
+                )
+            }
             ColorSection(
                 noteColor = state.noteColor,
                 onChangeColor = { color ->
@@ -93,21 +119,19 @@ fun AddEditNoteScreen(
             )
             Spacer(modifier = Modifier.height(16.dp))
             TransparentHintTextField(
-                value = state.noteTitleTextFieldValue,
+                text = state.noteTitle,
                 hint = "Enter title...",
                 onValueChange = {
-                    viewModel.onEvent(AddEditNoteScreenEvent.EnteredTitle(it.text))
+                    viewModel.onEvent(AddEditNoteScreenEvent.EnteredTitle(it))
                 },
-                onFocusChange = {},
                 textStyle = MaterialTheme.typography.titleMedium,
             )
             TransparentHintTextField(
-                value = state.noteContentTextFieldValue,
+                text = state.noteContent,
                 hint = "Enter content...",
                 onValueChange = {
-                    viewModel.onEvent(AddEditNoteScreenEvent.EnteredContent(it.text))
+                    viewModel.onEvent(AddEditNoteScreenEvent.EnteredContent(it))
                 },
-                onFocusChange = {},
                 textStyle = MaterialTheme.typography.bodyMedium,
             )
         }

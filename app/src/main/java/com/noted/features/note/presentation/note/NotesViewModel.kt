@@ -1,6 +1,5 @@
 package com.noted.features.note.presentation.note
 
-import android.util.Log
 import androidx.lifecycle.viewModelScope
 import com.noted.core.base.presentation.StatefulViewModel
 import com.noted.features.note.domain.model.Note
@@ -61,7 +60,6 @@ class NotesViewModel @Inject constructor(
         getNotesJob?.cancel()
         getNotesJob = notesUseCases.getNotes(noteOrder)
             .onEach { notes ->
-                Log.d("rere", notes.toString())
                 updateState {
                     copy(
                         notes = notes,

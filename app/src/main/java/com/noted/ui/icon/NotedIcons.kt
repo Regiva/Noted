@@ -2,10 +2,7 @@ package com.noted.ui.icon
 
 import androidx.annotation.DrawableRes
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.Delete
-import androidx.compose.material.icons.filled.Save
-import androidx.compose.material.icons.filled.Sort
+import androidx.compose.material.icons.filled.*
 import androidx.compose.ui.graphics.vector.ImageVector
 
 object NotedIcons {
@@ -13,6 +10,7 @@ object NotedIcons {
     val Delete = Icons.Default.Delete
     val Save = Icons.Default.Save
     val Sort = Icons.Default.Sort
+    val AddAlert = Icons.Default.AddAlert
 }
 
 sealed class Icon {
