@@ -2,17 +2,20 @@ package com.noted.ui.icon
 
 import androidx.annotation.DrawableRes
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.Delete
-import androidx.compose.material.icons.filled.Save
-import androidx.compose.material.icons.filled.Sort
+import androidx.compose.material.icons.filled.*
+import androidx.compose.material.icons.outlined.AddAlert
 import androidx.compose.ui.graphics.vector.ImageVector
 
 object NotedIcons {
     val Add = Icons.Default.Add
+    val AddAlert = Icons.Default.AddAlert
     val Delete = Icons.Default.Delete
     val Save = Icons.Default.Save
-    val Sort = Icons.Default.Sort
+    val Sort = Icons.Filled.Sort
+
+    object Outlined {
+        val AddAlert = Icons.Outlined.AddAlert
+    }
 }
 
 sealed class Icon {
