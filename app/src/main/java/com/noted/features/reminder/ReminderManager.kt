@@ -9,7 +9,6 @@ import com.noted.features.note.domain.model.Note
 import com.noted.features.reminder.domain.model.Reminder
 import com.noted.features.reminder.domain.model.Repeat
 import dagger.hilt.android.qualifiers.ApplicationContext
-import java.time.ZoneOffset
 import javax.inject.Inject
 
 class ReminderManager @Inject constructor(
@@ -21,33 +20,34 @@ class ReminderManager @Inject constructor(
         reminder: Reminder,
         note: Note,
     ) {
-
         val intent = Intent(context, AlarmReceiver::class.java).apply {
             putExtra("note_title", note.title)
             putExtra("note_content", note.content)
+            putExtra("reminder_id", reminder.id)
         }.let { intent ->
             PendingIntent.getBroadcast(
                 context.applicationContext,
-                note.id ?: 137, // TODO: change this :)
+                reminder.noteId,
                 intent,
                 PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
             )
         }
 
         if (canScheduleExactAlarms()) {
-            val triggerTime = reminder.dateTimeOfFirstRemind.toEpochSecond(ZoneOffset.UTC)
+            val triggerTimeInMillis = reminder.dateTimeOfFirstRemind * 1000
             val interval = reminder.repeat.getAlarmInterval()
             when (reminder.repeat) {
                 Repeat.Once -> {
-                    alarmManager.setAlarmClock(
-                        AlarmManager.AlarmClockInfo(triggerTime, intent),
+                    alarmManager.setExact(
+                        AlarmManager.RTC_WAKEUP,
+                        triggerTimeInMillis,
                         intent
                     )
                 }
                 else -> {
                     alarmManager.setRepeating(
                         AlarmManager.RTC_WAKEUP,
-                        triggerTime,
+                        triggerTimeInMillis,
                         interval,
                         intent
                     )
@@ -57,12 +57,12 @@ class ReminderManager @Inject constructor(
     }
 
     fun stopReminder(
-        reminderId: Int
+        reminder: Reminder,
     ) {
         val intent = Intent(context, AlarmReceiver::class.java).let { intent ->
             PendingIntent.getBroadcast(
                 context.applicationContext,
-                reminderId,
+                reminder.noteId,
                 intent,
                 0 or PendingIntent.FLAG_IMMUTABLE
             )
@@ -79,6 +79,7 @@ class ReminderManager @Inject constructor(
     }
 }
 
+// TODO: think about what to do w/ it
 fun Repeat.getAlarmInterval() = when (this) {
     Repeat.Once -> 0
     Repeat.Day -> AlarmManager.INTERVAL_DAY

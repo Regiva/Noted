@@ -5,14 +5,13 @@ import androidx.compose.ui.graphics.toArgb
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.viewModelScope
 import com.noted.core.base.presentation.StatefulViewModel
-import com.noted.features.note.domain.model.InvalidNoteException
 import com.noted.features.note.domain.model.Note
 import com.noted.features.note.domain.usecase.NoteUseCases
-import com.noted.features.reminder.ReminderManager
 import com.noted.features.reminder.domain.model.Day
 import com.noted.features.reminder.domain.model.Reminder
 import com.noted.features.reminder.domain.model.Repeat
 import com.noted.features.reminder.domain.model.Time
+import com.noted.features.reminder.domain.usecase.ReminderUseCases
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.asSharedFlow
@@ -24,10 +23,8 @@ import javax.inject.Inject
 class AddEditNoteViewModel @Inject constructor(
     savedStateHandle: SavedStateHandle,
     private val notesUseCases: NoteUseCases,
-    private val reminderManager: ReminderManager,
+    private val reminderUseCases: ReminderUseCases,
 ) : StatefulViewModel<AddEditNoteState>(AddEditNoteState()) {
-
-    private var currentNoteId: Int? = null
 
     private val _eventFlow = MutableSharedFlow<UiEvent>()
     val eventFlow = _eventFlow.asSharedFlow()
@@ -36,14 +33,17 @@ class AddEditNoteViewModel @Inject constructor(
         savedStateHandle.get<Int>("noteId")?.let { noteId ->
             if (noteId != -1) {
                 viewModelScope.launch {
-                    notesUseCases.getNote(noteId)?.also { note ->
-                        currentNoteId = note.id
+                    notesUseCases.getNoteWithReminder(noteId)?.also { noteWithReminder ->
                         updateState {
                             copy(
-                                note = note,
-                                noteTitle = note.title,
-                                noteContent = note.content,
-                                noteColor = Color(note.color),
+                                note = noteWithReminder.note,
+                                noteTitle = noteWithReminder.note.title,
+                                noteContent = noteWithReminder.note.content,
+                                noteColor = Color(noteWithReminder.note.color),
+                                reminder = noteWithReminder.reminder ?: state.reminder,
+                                reminderDialogState = state.reminderDialogState.copy(
+                                    deleteButton = noteWithReminder.reminder != null,
+                                )
                             )
                         }
                     }
@@ -52,82 +52,127 @@ class AddEditNoteViewModel @Inject constructor(
         }
     }
 
-    fun onEvent(event: AddEditNoteScreenEvent) {
-        when (event) {
-            is AddEditNoteScreenEvent.ChangeColor -> {
-                updateState {
-                    copy(noteColor = event.color)
+    fun onEvent(event: AddEditNoteScreenEvent): Any = when (event) {
+        is AddEditNoteScreenEvent.ChangeColor -> {
+            updateState {
+                copy(noteColor = event.color)
+            }
+        }
+
+        is AddEditNoteScreenEvent.EnteredContent -> {
+            updateState {
+                copy(noteContent = event.value)
+            }
+        }
+
+        is AddEditNoteScreenEvent.EnteredTitle -> {
+            updateState {
+                copy(noteTitle = event.value)
+            }
+        }
+
+        is AddEditNoteScreenEvent.SaveNote -> {
+            viewModelScope.launch {
+                saveNote()
+            }
+            navigateUp()
+        }
+
+        is AddEditNoteScreenEvent.OpenCloseReminderDialog -> {
+            toggleReminderDialogVisibility()
+        }
+
+        is AddEditNoteScreenEvent.EnteredReminder -> {
+            val enteredTime = LocalTime.of(event.time.getHour(), event.time.getMinute())
+            updateState {
+                copy(
+                    reminderDialogState = state.reminderDialogState.copy(
+                        error = event.day == Day.Today && enteredTime < LocalTime.now()
+                    )
+                )
+            }
+        }
+
+        is AddEditNoteScreenEvent.AddReminder -> {
+            viewModelScope.launch {
+                saveNote()
+                state.note?.id?.let { noteId ->
+                    val reminder = Reminder.from(event.day, event.time, event.repeat, noteId)
+                    addReminderToNote(reminder)
                 }
             }
-
-            is AddEditNoteScreenEvent.EnteredContent -> {
-                updateState {
-                    copy(noteContent = event.value)
-                }
+            toggleReminderDialogVisibility()
+            updateState {
+                copy(
+                    reminderDialogState = state.reminderDialogState.copy(
+                        deleteButton = state.reminder != null,
+                    ),
+                )
             }
+        }
 
-            is AddEditNoteScreenEvent.EnteredTitle -> {
-                updateState {
-                    copy(noteTitle = event.value)
-                }
-            }
+        is AddEditNoteScreenEvent.DeleteReminder -> {
+            deleteReminder()
+            toggleReminderDialogVisibility()
+        }
+    }
 
-            is AddEditNoteScreenEvent.SaveNote -> {
-                viewModelScope.launch {
-                    try {
-                        notesUseCases.addNote(
-                            Note(
-                                title = state.noteTitle,
-                                content = state.noteContent,
-                                timestamp = System.currentTimeMillis(),
-                                color = state.noteColor.toArgb(),
-                                id = currentNoteId
-                            )
-                        )
-                        _eventFlow.emit(UiEvent.SaveNote)
-                    } catch (e: InvalidNoteException) {
-                        _eventFlow.emit(
-                            UiEvent.ShowSnackbar(
-                                message = e.message ?: "Couldn't save note"
-                            )
-                        )
-                    }
-                }
-            }
+    private fun toggleReminderDialogVisibility(
+        visible: Boolean = !state.reminderDialogState.visible,
+    ) {
+        updateState {
+            copy(reminderDialogState = state.reminderDialogState.copy(visible = visible))
+        }
+    }
 
-            is AddEditNoteScreenEvent.OpenCloseReminderDialog -> {
+    private fun deleteReminder() {
+        viewModelScope.launch {
+            state.reminder?.let {
+                reminderUseCases.deleteReminder(it)
                 updateState {
                     copy(
-                        reminderState = state.reminderState.copy(
-                            visible = !state.reminderState.visible,
-                        )
-                    )
-                }
-            }
-
-            is AddEditNoteScreenEvent.EnteredReminder -> {
-                val enteredTime = LocalTime.of(event.time.getHour(), event.time.getMinute())
-                updateState {
-                    copy(
-                        reminderState = state.reminderState.copy(
-                            error = event.day == Day.Today && enteredTime < LocalTime.now()
-                        )
-                    )
-                }
-            }
-
-            is AddEditNoteScreenEvent.AddReminder -> {
-                state.note?.let { note ->
-                    reminderManager.startReminder(
-                        reminder = Reminder.from(
-                            day = event.day,
-                            time = event.time,
-                            repeat = event.repeat,
+                        reminder = null,
+                        reminderDialogState = state.reminderDialogState.copy(
+                            deleteButton = false,
                         ),
-                        note = note,
                     )
                 }
             }
+        }
+    }
+
+    private suspend fun saveNote() {
+        val savedNote = notesUseCases.addNote(
+            Note(
+                title = state.noteTitle,
+                content = state.noteContent,
+                timestamp = System.currentTimeMillis(),
+                color = state.noteColor.toArgb(),
+                id = state.note?.id
+            )
+        )
+        updateState {
+            copy(note = savedNote)
+        }
+    }
+
+    private fun addReminderToNote(reminder: Reminder) {
+        viewModelScope.launch {
+            state.note?.let { note ->
+                val addedReminder = reminderUseCases.addReminder(
+                    reminder = reminder,
+                    note = note
+                )
+                updateState {
+                    copy(reminder = addedReminder)
+                }
+            }
+        }
+    }
+
+    private fun navigateUp() {
+        viewModelScope.launch {
+            _eventFlow.emit(UiEvent.SaveNote)
         }
     }
 
@@ -142,13 +187,14 @@ data class AddEditNoteState(
     val noteTitle: String = "",
     val noteContent: String = "",
     val noteColor: Color = Note.noteColors.random(),
-    val reminderState: ReminderState = ReminderState(),
+    val reminderDialogState: ReminderDialogState = ReminderDialogState(),
+    val reminder: Reminder? = null,
 )
 
-data class ReminderState(
+data class ReminderDialogState(
     val visible: Boolean = false,
-    val reminder: Reminder = Reminder(),
     val error: Boolean = false,
+    val deleteButton: Boolean = false,
 )
 
 sealed class AddEditNoteScreenEvent {
@@ -163,4 +209,6 @@ sealed class AddEditNoteScreenEvent {
         val time: Time,
         val repeat: Repeat,
     ) : AddEditNoteScreenEvent()
+
+    object DeleteReminder : AddEditNoteScreenEvent()
 }

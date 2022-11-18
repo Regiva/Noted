@@ -2,6 +2,7 @@ package com.noted.di
 
 import android.app.Application
 import androidx.room.Room
+import com.noted.features.note.data.datasource.MIGRATION_1_2
 import com.noted.features.note.data.datasource.NoteDatabase
 import com.noted.features.note.data.repository.NoteRepositoryImpl
 import com.noted.features.note.domain.repository.NoteRepository
@@ -23,6 +24,8 @@ object AppModule {
             app,
             NoteDatabase::class.java,
             NoteDatabase.DATABASE_NAME,
+        ).addMigrations(
+            MIGRATION_1_2,
         ).build()
     }
 
@@ -40,6 +43,7 @@ object AppModule {
             deleteNote = DeleteNote(repository),
             addNote = AddNote(repository),
             getNote = GetNote(repository),
+            getNoteWithReminder = GetNoteWithReminder(repository),
         )
     }
 }

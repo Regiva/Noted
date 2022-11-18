@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.height
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
@@ -20,7 +21,9 @@ fun ReminderDialog(
     onDismiss: () -> Unit,
     onConfirm: (Day, Time, Repeat) -> Unit,
     onEntered: (Day, Time) -> Unit,
+    onDelete: () -> Unit,
     error: Boolean,
+    deleteButton: Boolean,
 ) {
     var day by remember { mutableStateOf(Day.Today) }
     var time by remember { mutableStateOf(Time.Day) }
@@ -86,6 +89,18 @@ fun ReminderDialog(
                             onEntered(day, time)
                         }
                     )
+
+                    if (deleteButton) {
+                        TextButton(
+                            onClick = onDelete,
+                            modifier = Modifier.align(Alignment.End)
+                        ) {
+                            Text(
+                                text = "Delete",
+                                style = MaterialTheme.typography.labelLarge,
+                            )
+                        }
+                    }
                 }
             }
         }

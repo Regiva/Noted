@@ -69,7 +69,7 @@ fun NotesScreen(
             NotesScreenNotesList(
                 notes = state.notes,
                 onNoteClick = { note ->
-                    // TODO: open note with animation
+                    // TODO: open note with animation (LookAheadLayout?)
                     // TODO: change params
                     navController.navigate(
                         Screen.AddEditNoteScreen.route +

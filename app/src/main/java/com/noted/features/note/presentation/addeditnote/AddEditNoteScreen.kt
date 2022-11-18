@@ -81,13 +81,17 @@ fun AddEditNoteScreen(
                     onClick = { viewModel.onEvent(AddEditNoteScreenEvent.OpenCloseReminderDialog) }
                 ) {
                     Icon(
-                        imageVector = NotedIcons.AddAlert,
+                        imageVector = if (state.reminder != null) {
+                            NotedIcons.AddAlert
+                        } else {
+                            NotedIcons.Outlined.AddAlert
+                        },
                         tint = MaterialTheme.colorScheme.primary,
                         contentDescription = stringResource(R.string.noted_pin_note),
                     )
                 }
             }
-            if (state.reminderState.visible) {
+            if (state.reminderDialogState.visible) {
                 ReminderDialog(
                     onDismiss = {
                         viewModel.onEvent(AddEditNoteScreenEvent.OpenCloseReminderDialog)
@@ -98,7 +102,11 @@ fun AddEditNoteScreen(
                     onEntered = { day, time ->
                         viewModel.onEvent(AddEditNoteScreenEvent.EnteredReminder(day, time))
                     },
-                    error = state.reminderState.error,
+                    onDelete = {
+                        viewModel.onEvent(AddEditNoteScreenEvent.DeleteReminder)
+                    },
+                    error = state.reminderDialogState.error,
+                    deleteButton = state.reminderDialogState.deleteButton,
                 )
             }
             ColorSection(
