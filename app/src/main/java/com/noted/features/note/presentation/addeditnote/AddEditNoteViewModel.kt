@@ -2,7 +2,8 @@ package com.noted.features.note.presentation.addeditnote
 
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
-import androidx.lifecycle.SavedStateHandle
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.noted.core.base.presentation.StatefulViewModel
 import com.noted.features.note.domain.model.Note
@@ -12,40 +13,42 @@ import com.noted.features.reminder.domain.model.Reminder
 import com.noted.features.reminder.domain.model.Repeat
 import com.noted.features.reminder.domain.model.Time
 import com.noted.features.reminder.domain.usecase.ReminderUseCases
-import dagger.hilt.android.lifecycle.HiltViewModel
+import dagger.assisted.Assisted
+import dagger.assisted.AssistedFactory
+import dagger.assisted.AssistedInject
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.launch
 import java.time.LocalTime
-import javax.inject.Inject
 
-@HiltViewModel
-class AddEditNoteViewModel @Inject constructor(
-    savedStateHandle: SavedStateHandle,
+class AddEditNoteViewModel @AssistedInject constructor(
     private val notesUseCases: NoteUseCases,
     private val reminderUseCases: ReminderUseCases,
+    @Assisted private val noteId: Int? = null,
 ) : StatefulViewModel<AddEditNoteState>(AddEditNoteState()) {
 
     private val _eventFlow = MutableSharedFlow<UiEvent>()
     val eventFlow = _eventFlow.asSharedFlow()
 
     init {
-        savedStateHandle.get<Int>("noteId")?.let { noteId ->
-            if (noteId != -1) {
-                viewModelScope.launch {
-                    notesUseCases.getNoteWithReminder(noteId)?.also { noteWithReminder ->
-                        updateState {
-                            copy(
-                                note = noteWithReminder.note,
-                                noteTitle = noteWithReminder.note.title,
-                                noteContent = noteWithReminder.note.content,
-                                noteColor = Color(noteWithReminder.note.color),
-                                reminder = noteWithReminder.reminder ?: state.reminder,
-                                reminderDialogState = state.reminderDialogState.copy(
-                                    deleteButton = noteWithReminder.reminder != null,
-                                )
+        getNoteWithReminder()
+    }
+
+    private fun getNoteWithReminder() {
+        if (noteId != -1 && noteId != null) {
+            viewModelScope.launch {
+                notesUseCases.getNoteWithReminder(noteId)?.also { noteWithReminder ->
+                    updateState {
+                        copy(
+                            note = noteWithReminder.note,
+                            noteTitle = noteWithReminder.note.title,
+                            noteContent = noteWithReminder.note.content,
+                            noteColor = Color(noteWithReminder.note.color),
+                            reminder = noteWithReminder.reminder ?: state.reminder,
+                            reminderDialogState = state.reminderDialogState.copy(
+                                deleteButton = noteWithReminder.reminder != null,
                             )
-                        }
+                        )
                     }
                 }
             }
@@ -179,6 +182,23 @@ class AddEditNoteViewModel @Inject constructor(
     sealed class UiEvent {
         data class ShowSnackbar(val message: String) : UiEvent()
         object SaveNote : UiEvent()
+    }
+
+    @AssistedFactory
+    interface Factory {
+        fun create(noteId: Int?): AddEditNoteViewModel
+    }
+
+    companion object {
+        fun providesFactory(
+            assistedFactory: Factory,
+            noteId: Int?
+        ): ViewModelProvider.Factory = object : ViewModelProvider.Factory {
+            @Suppress("UNCHECKED_CAST")
+            override fun <T : ViewModel> create(modelClass: Class<T>): T {
+                return assistedFactory.create(noteId) as T
+            }
+        }
     }
 }
 

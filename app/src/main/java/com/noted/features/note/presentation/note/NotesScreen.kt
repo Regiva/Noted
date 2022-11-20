@@ -17,30 +17,64 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
-import androidx.navigation.NavController
+import com.github.terrakok.modo.NavigationContainer
+import com.github.terrakok.modo.Screen
+import com.github.terrakok.modo.ScreenKey
+import com.github.terrakok.modo.generateScreenKey
+import com.github.terrakok.modo.stack.StackState
+import com.github.terrakok.modo.stack.forward
 import com.noted.R
-import com.noted.core.navigation.Screen
+import com.noted.core.navigation.LocalSnackbarHostState
+import com.noted.core.navigation.utils.navContainer
 import com.noted.features.note.domain.model.Note
 import com.noted.features.note.domain.util.NoteOrder
+import com.noted.features.note.presentation.addeditnote.AddEditNoteScreen
 import com.noted.features.note.presentation.note.components.NoteItem
 import com.noted.features.note.presentation.note.components.OrderSection
 import com.noted.ui.icon.NotedIcons
 import kotlinx.coroutines.launch
+import kotlinx.parcelize.Parcelize
+
+@Parcelize
+class NotesScreen(
+    override val screenKey: ScreenKey = generateScreenKey(),
+) : Screen {
+
+    @Composable
+    override fun Content() {
+        NotesScreenContent(
+            navigator = this.navContainer,
+        )
+    }
+
+}
+
+private fun NavigationContainer<StackState>.navigateToAddEditNoteScreen(
+    noteId: Int? = null,
+    noteColor: Int = -1,
+) {
+    this.forward(
+        AddEditNoteScreen(
+            noteId = noteId,
+            noteColor = noteColor,
+        )
+    )
+}
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun NotesScreen(
-    navController: NavController,
-    snackbarHostState: SnackbarHostState,
+fun NotesScreenContent(
+    navigator: NavigationContainer<StackState>,
     viewModel: NotesViewModel = hiltViewModel(),
 ) {
     val state by viewModel.stateFlow.collectAsState()
     val scope = rememberCoroutineScope()
+    val snackbarHostState = LocalSnackbarHostState.current
 
     Scaffold(
         floatingActionButton = {
             FloatingActionButton(
-                onClick = { navController.navigate(Screen.AddEditNoteScreen.route) },
+                onClick = { navigator.navigateToAddEditNoteScreen() },
             ) {
                 Icon(
                     imageVector = NotedIcons.Add,
@@ -48,7 +82,6 @@ fun NotesScreen(
                 )
             }
         },
-        snackbarHost = { SnackbarHost(hostState = snackbarHostState) },
     ) { padding ->
         Column(
             modifier = Modifier
@@ -70,11 +103,7 @@ fun NotesScreen(
                 notes = state.notes,
                 onNoteClick = { note ->
                     // TODO: open note with animation (LookAheadLayout?)
-                    // TODO: change params
-                    navController.navigate(
-                        Screen.AddEditNoteScreen.route +
-                                "?noteId=${note.id}&noteColor=${note.color}"
-                    )
+                    navigator.navigateToAddEditNoteScreen(note.id, note.color)
                 },
                 onDeleteNoteClick = { note ->
                     viewModel.onEvent(NotesScreenEvents.DeleteNote(note))
