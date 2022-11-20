@@ -16,25 +16,68 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
-import androidx.hilt.navigation.compose.hiltViewModel
-import androidx.navigation.NavController
+import com.github.terrakok.modo.NavigationContainer
+import com.github.terrakok.modo.Screen
+import com.github.terrakok.modo.ScreenKey
+import com.github.terrakok.modo.generateScreenKey
+import com.github.terrakok.modo.stack.StackState
+import com.github.terrakok.modo.stack.back
 import com.noted.R
+import com.noted.core.navigation.LocalSnackbarHostState
+import com.noted.core.navigation.utils.context
+import com.noted.core.navigation.utils.navContainer
+import com.noted.features.note.di.AddEditNoteScreenEntryPoint
 import com.noted.features.note.domain.model.Note
 import com.noted.features.note.presentation.addeditnote.components.ReminderDialog
 import com.noted.features.note.presentation.addeditnote.components.TransparentHintTextField
 import com.noted.ui.icon.NotedIcons
+import dagger.hilt.android.EntryPointAccessors
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
+import kotlinx.parcelize.Parcelize
+
+@Parcelize
+class AddEditNoteScreen(
+    override val screenKey: ScreenKey = generateScreenKey(),
+    private val noteId: Int? = -1,
+    private val noteColor: Int = -1,
+) : Screen {
+
+    @Composable
+    override fun Content() {
+        val context = this.context
+
+        // TODO: move this to generified ext?
+        val factory = remember {
+            EntryPointAccessors.fromApplication(
+                context = context,
+                entryPoint = AddEditNoteScreenEntryPoint::class.java,
+            ).addEditNoteVmFactory
+        }
+        // TODO: move this to generified ext?
+        val viewModel: AddEditNoteViewModel = remember {
+            AddEditNoteViewModel.providesFactory(
+                assistedFactory = factory,
+                noteId = noteId,
+            ).create(AddEditNoteViewModel::class.java)
+        }
+        AddEditNoteScreenContent(
+            navigator = this.navContainer,
+            noteColor = noteColor,
+            viewModel = viewModel,
+        )
+    }
+}
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun AddEditNoteScreen(
-    navController: NavController,
-    snackbarHostState: SnackbarHostState,
+fun AddEditNoteScreenContent(
+    navigator: NavigationContainer<StackState>,
+    viewModel: AddEditNoteViewModel,
     noteColor: Int,
-    viewModel: AddEditNoteViewModel = hiltViewModel(),
 ) {
     val state by viewModel.stateFlow.collectAsState()
+    val snackbarHostState = LocalSnackbarHostState.current
 
     val noteBackgroundAnimatable = remember {
         Animatable(
@@ -48,7 +91,7 @@ fun AddEditNoteScreen(
         viewModel.eventFlow.collectLatest { event ->
             when (event) {
                 is AddEditNoteViewModel.UiEvent.SaveNote -> {
-                    navController.navigateUp()
+                    navigator.back()
                 }
                 is AddEditNoteViewModel.UiEvent.ShowSnackbar -> {
                     snackbarHostState.showSnackbar(event.message)
