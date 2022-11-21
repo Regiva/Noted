@@ -1,0 +1,39 @@
+{
+  "project_info": {
+    "project_number": "120160402606",
+    "project_id": "noted-deton",
+    "storage_bucket": "noted-deton.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:120160402606:android:12046584bb9e28adf1413f",
+        "android_client_info": {
+          "package_name": "com.noted"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "120160402606-4ueu0hbbckedjhtbifkrhcpuhcenc821.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCWsjTqiMWTDQh0yyu2fIviyUeNkeyubV0"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "120160402606-4ueu0hbbckedjhtbifkrhcpuhcenc821.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
