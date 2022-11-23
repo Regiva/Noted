@@ -1,5 +1,7 @@
 package com.noted.features.note.presentation.addeditnote
 
+import android.content.Intent
+import android.provider.Settings
 import androidx.compose.animation.Animatable
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
@@ -16,11 +18,9 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
-import com.github.terrakok.modo.NavigationContainer
 import com.github.terrakok.modo.Screen
 import com.github.terrakok.modo.ScreenKey
 import com.github.terrakok.modo.generateScreenKey
-import com.github.terrakok.modo.stack.StackState
 import com.github.terrakok.modo.stack.back
 import com.noted.R
 import com.noted.core.navigation.LocalSnackbarHostState
@@ -46,6 +46,7 @@ class AddEditNoteScreen(
     @Composable
     override fun Content() {
         val context = this.context
+        val navigator = this.navContainer
 
         // TODO: move this to generified ext?
         val factory = remember {
@@ -62,9 +63,18 @@ class AddEditNoteScreen(
             ).create(AddEditNoteViewModel::class.java)
         }
         AddEditNoteScreenContent(
-            navigator = this.navContainer,
             noteColor = noteColor,
             viewModel = viewModel,
+            openSettings = {
+                if (!viewModel.isVersionLowerThanS()) {
+                    context.startActivity(
+                        Intent().apply {
+                            action = Settings.ACTION_REQUEST_SCHEDULE_EXACT_ALARM
+                        }
+                    )
+                }
+            },
+            navigateUp = navigator::back,
         )
     }
 }
@@ -72,9 +82,10 @@ class AddEditNoteScreen(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AddEditNoteScreenContent(
-    navigator: NavigationContainer<StackState>,
     viewModel: AddEditNoteViewModel,
     noteColor: Int,
+    openSettings: () -> Unit,
+    navigateUp: () -> Unit,
 ) {
     val state by viewModel.stateFlow.collectAsState()
     val snackbarHostState = LocalSnackbarHostState.current
@@ -91,10 +102,19 @@ fun AddEditNoteScreenContent(
         viewModel.eventFlow.collectLatest { event ->
             when (event) {
                 is AddEditNoteViewModel.UiEvent.SaveNote -> {
-                    navigator.back()
+                    navigateUp()
                 }
                 is AddEditNoteViewModel.UiEvent.ShowSnackbar -> {
                     snackbarHostState.showSnackbar(event.message)
+                }
+                is AddEditNoteViewModel.UiEvent.ShowAlarmRationaleSnackbar -> {
+                    val snackbarResult = snackbarHostState.showSnackbar(
+                        message = "Please grant us permission to properly schedule alarms",
+                        actionLabel = "Settings",
+                    )
+                    if (snackbarResult == SnackbarResult.ActionPerformed) {
+                        openSettings()
+                    }
                 }
             }
         }

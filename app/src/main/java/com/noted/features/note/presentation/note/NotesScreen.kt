@@ -42,8 +42,10 @@ class NotesScreen(
 
     @Composable
     override fun Content() {
+        val navigator = this.navContainer
         NotesScreenContent(
-            navigator = this.navContainer,
+            navigateToAddEditNoteScreen = navigator::navigateToAddEditNoteScreen,
+            navigateToBlankAddEditNoteScreen = navigator::navigateToAddEditNoteScreen,
         )
     }
 
@@ -64,8 +66,9 @@ private fun NavigationContainer<StackState>.navigateToAddEditNoteScreen(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun NotesScreenContent(
-    navigator: NavigationContainer<StackState>,
     viewModel: NotesViewModel = hiltViewModel(),
+    navigateToBlankAddEditNoteScreen: () -> Unit,
+    navigateToAddEditNoteScreen: (Int?, Int) -> Unit,
 ) {
     val state by viewModel.stateFlow.collectAsState()
     val scope = rememberCoroutineScope()
@@ -74,7 +77,7 @@ fun NotesScreenContent(
     Scaffold(
         floatingActionButton = {
             FloatingActionButton(
-                onClick = { navigator.navigateToAddEditNoteScreen() },
+                onClick = { navigateToBlankAddEditNoteScreen() },
             ) {
                 Icon(
                     imageVector = NotedIcons.Add,
@@ -103,7 +106,7 @@ fun NotesScreenContent(
                 notes = state.notes,
                 onNoteClick = { note ->
                     // TODO: open note with animation (LookAheadLayout?)
-                    navigator.navigateToAddEditNoteScreen(note.id, note.color)
+                    navigateToAddEditNoteScreen(note.id, note.color)
                 },
                 onDeleteNoteClick = { note ->
                     viewModel.onEvent(NotesScreenEvents.DeleteNote(note))
