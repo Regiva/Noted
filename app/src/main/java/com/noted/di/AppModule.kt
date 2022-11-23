@@ -3,6 +3,7 @@ package com.noted.di
 import android.app.Application
 import androidx.room.Room
 import com.noted.features.note.data.datasource.MIGRATION_1_2
+import com.noted.features.note.data.datasource.MIGRATION_2_3
 import com.noted.features.note.data.datasource.NoteDatabase
 import com.noted.features.note.data.repository.NoteRepositoryImpl
 import com.noted.features.note.domain.repository.NoteRepository
@@ -26,6 +27,7 @@ object AppModule {
             NoteDatabase.DATABASE_NAME,
         ).addMigrations(
             MIGRATION_1_2,
+            MIGRATION_2_3,
         ).build()
     }
 

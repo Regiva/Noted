@@ -8,10 +8,11 @@ import androidx.lifecycle.viewModelScope
 import com.noted.core.base.presentation.StatefulViewModel
 import com.noted.features.note.domain.model.Note
 import com.noted.features.note.domain.usecase.NoteUseCases
-import com.noted.features.reminder.domain.model.Day
+import com.noted.features.note.presentation.addeditnote.uimodel.ReminderUiModel
+import com.noted.features.note.utils.localDateTimeOfEpochSec
+import com.noted.features.note.utils.toEpochSec
 import com.noted.features.reminder.domain.model.Reminder
 import com.noted.features.reminder.domain.model.Repeat
-import com.noted.features.reminder.domain.model.Time
 import com.noted.features.reminder.domain.usecase.ReminderUseCases
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedFactory
@@ -19,6 +20,8 @@ import dagger.assisted.AssistedInject
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.launch
+import java.time.LocalDate
+import java.time.LocalDateTime
 import java.time.LocalTime
 
 class AddEditNoteViewModel @AssistedInject constructor(
@@ -44,10 +47,12 @@ class AddEditNoteViewModel @AssistedInject constructor(
                             noteTitle = noteWithReminder.note.title,
                             noteContent = noteWithReminder.note.content,
                             noteColor = Color(noteWithReminder.note.color),
-                            reminder = noteWithReminder.reminder ?: state.reminder,
-                            reminderDialogState = state.reminderDialogState.copy(
-                                deleteButton = noteWithReminder.reminder != null,
-                            )
+                            reminderUi = ReminderUiModel(
+                                reminder = noteWithReminder.reminder,
+                                dateTime = localDateTimeOfEpochSec(
+                                    seconds = noteWithReminder.reminder?.epochSecondsOfFirstRemind,
+                                ),
+                            ),
                         )
                     }
                 }
@@ -86,12 +91,11 @@ class AddEditNoteViewModel @AssistedInject constructor(
         }
 
         is AddEditNoteScreenEvent.EnteredReminder -> {
-            val enteredTime = LocalTime.of(event.time.getHour(), event.time.getMinute())
             updateState {
                 copy(
-                    reminderDialogState = state.reminderDialogState.copy(
-                        error = event.day == Day.Today && enteredTime < LocalTime.now()
-                    )
+                    reminderUi = state.reminderUi.copy(
+                        dateTime = LocalDateTime.of(event.date, event.time),
+                    ),
                 )
             }
         }
@@ -100,18 +104,15 @@ class AddEditNoteViewModel @AssistedInject constructor(
             viewModelScope.launch {
                 saveNote()
                 state.note?.id?.let { noteId ->
-                    val reminder = Reminder.from(event.day, event.time, event.repeat, noteId)
+                    val reminder = Reminder(
+                        noteId = noteId,
+                        epochSecondsOfFirstRemind = state.reminderUi.dateTime.toEpochSec(),
+                        repeat = event.repeat,
+                    )
                     addReminderToNote(reminder)
                 }
             }
             toggleReminderDialogVisibility()
-            updateState {
-                copy(
-                    reminderDialogState = state.reminderDialogState.copy(
-                        deleteButton = state.reminder != null,
-                    ),
-                )
-            }
         }
 
         is AddEditNoteScreenEvent.DeleteReminder -> {
@@ -121,23 +122,20 @@ class AddEditNoteViewModel @AssistedInject constructor(
     }
 
     private fun toggleReminderDialogVisibility(
-        visible: Boolean = !state.reminderDialogState.visible,
+        visible: Boolean = !state.dialogVisible,
     ) {
         updateState {
-            copy(reminderDialogState = state.reminderDialogState.copy(visible = visible))
+            copy(dialogVisible = visible)
         }
     }
 
     private fun deleteReminder() {
         viewModelScope.launch {
-            state.reminder?.let {
-                reminderUseCases.deleteReminder(it)
+            state.reminderUi.reminder?.let { reminder ->
+                reminderUseCases.deleteReminder(reminder)
                 updateState {
                     copy(
-                        reminder = null,
-                        reminderDialogState = state.reminderDialogState.copy(
-                            deleteButton = false,
-                        ),
+                        reminderUi = ReminderUiModel(),
                     )
                 }
             }
@@ -167,7 +165,11 @@ class AddEditNoteViewModel @AssistedInject constructor(
                     note = note
                 )
                 updateState {
-                    copy(reminder = addedReminder)
+                    copy(
+                        reminderUi = state.reminderUi.copy(
+                            reminder = addedReminder,
+                        ),
+                    )
                 }
             }
         }
@@ -192,7 +194,7 @@ class AddEditNoteViewModel @AssistedInject constructor(
     companion object {
         fun providesFactory(
             assistedFactory: Factory,
-            noteId: Int?
+            noteId: Int?,
         ): ViewModelProvider.Factory = object : ViewModelProvider.Factory {
             @Suppress("UNCHECKED_CAST")
             override fun <T : ViewModel> create(modelClass: Class<T>): T {
@@ -207,15 +209,12 @@ data class AddEditNoteState(
     val noteTitle: String = "",
     val noteContent: String = "",
     val noteColor: Color = Note.noteColors.random(),
-    val reminderDialogState: ReminderDialogState = ReminderDialogState(),
-    val reminder: Reminder? = null,
-)
-
-data class ReminderDialogState(
-    val visible: Boolean = false,
-    val error: Boolean = false,
-    val deleteButton: Boolean = false,
-)
+    val dialogVisible: Boolean = false,
+    val reminderUi: ReminderUiModel = ReminderUiModel(),
+) {
+    val reminderPresent: Boolean = reminderUi.reminder != null
+    val dialogDateTimeError: Boolean = reminderUi.dateTime < LocalDateTime.now()
+}
 
 sealed class AddEditNoteScreenEvent {
     data class EnteredTitle(val value: String) : AddEditNoteScreenEvent()
@@ -223,10 +222,14 @@ sealed class AddEditNoteScreenEvent {
     data class ChangeColor(val color: Color) : AddEditNoteScreenEvent()
     object SaveNote : AddEditNoteScreenEvent()
     object OpenCloseReminderDialog : AddEditNoteScreenEvent()
-    data class EnteredReminder(val day: Day, val time: Time) : AddEditNoteScreenEvent()
+    data class EnteredReminder(
+        val date: LocalDate,
+        val time: LocalTime,
+    ) : AddEditNoteScreenEvent()
+
     data class AddReminder(
-        val day: Day,
-        val time: Time,
+        val date: LocalDate,
+        val time: LocalTime,
         val repeat: Repeat,
     ) : AddEditNoteScreenEvent()
 

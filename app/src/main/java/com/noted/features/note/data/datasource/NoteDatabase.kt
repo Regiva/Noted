@@ -10,7 +10,7 @@ import com.noted.features.reminder.domain.model.Reminder
 
 @Database(
     entities = [Note::class, Reminder::class],
-    version = 2,
+    version = 3,
 )
 abstract class NoteDatabase : RoomDatabase() {
 
@@ -31,6 +31,18 @@ val MIGRATION_1_2 = object : Migration(1, 2) {
                 noteId INTEGER NOT NULL,
                 dateTimeOfFirstRemind INTEGER NOT NULL,
                 repeat TEXT NOT NULL);
+            """.trimIndent()
+        )
+    }
+}
+
+val MIGRATION_2_3 = object : Migration(2, 3) {
+    override fun migrate(database: SupportSQLiteDatabase) {
+        database.execSQL(
+            """
+                ALTER TABLE reminder 
+                RENAME COLUMN dateTimeOfFirstRemind 
+                TO epochSecondsOfFirstRemind;
             """.trimIndent()
         )
     }

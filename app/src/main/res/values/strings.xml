@@ -5,6 +5,7 @@
     <string name="noted_color">Color</string>
     <string name="noted_ascending">Ascending</string>
     <string name="noted_descending">Descending</string>
+    <string name="noted_delete">Delete</string>
     <string name="noted_delete_note">Delete note</string>
     <string name="noted_save_note">Save note</string>
     <string name="noted_sort">Sort</string>
