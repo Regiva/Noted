@@ -1,5 +1,7 @@
 package com.noted.features.note.presentation.addeditnote
 
+import android.app.AlarmManager
+import android.os.Build
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
 import androidx.lifecycle.ViewModel
@@ -27,6 +29,7 @@ import java.time.LocalTime
 class AddEditNoteViewModel @AssistedInject constructor(
     private val notesUseCases: NoteUseCases,
     private val reminderUseCases: ReminderUseCases,
+    private val alarmManager: AlarmManager,
     @Assisted private val noteId: Int? = null,
 ) : StatefulViewModel<AddEditNoteState>(AddEditNoteState()) {
 
@@ -159,21 +162,35 @@ class AddEditNoteViewModel @AssistedInject constructor(
 
     private fun addReminderToNote(reminder: Reminder) {
         viewModelScope.launch {
-            state.note?.let { note ->
-                val addedReminder = reminderUseCases.addReminder(
-                    reminder = reminder,
-                    note = note
-                )
-                updateState {
-                    copy(
-                        reminderUi = state.reminderUi.copy(
-                            reminder = addedReminder,
-                        ),
+            if (canScheduleExactAlarms()) {
+                state.note?.let { note ->
+                    val addedReminder = reminderUseCases.addReminder(
+                        reminder = reminder,
+                        note = note
                     )
+                    updateState {
+                        copy(
+                            reminderUi = state.reminderUi.copy(
+                                reminder = addedReminder,
+                            ),
+                        )
+                    }
                 }
+            } else {
+                _eventFlow.emit(UiEvent.ShowAlarmRationaleSnackbar)
             }
         }
     }
+
+    private fun canScheduleExactAlarms(): Boolean {
+        return if (isVersionLowerThanS()) {
+            true
+        } else {
+            alarmManager.canScheduleExactAlarms()
+        }
+    }
+
+    fun isVersionLowerThanS(): Boolean = Build.VERSION.SDK_INT < Build.VERSION_CODES.S
 
     private fun navigateUp() {
         viewModelScope.launch {
@@ -184,6 +201,7 @@ class AddEditNoteViewModel @AssistedInject constructor(
     sealed class UiEvent {
         data class ShowSnackbar(val message: String) : UiEvent()
         object SaveNote : UiEvent()
+        object ShowAlarmRationaleSnackbar : UiEvent()
     }
 
     @AssistedFactory
