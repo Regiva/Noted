@@ -12,32 +12,50 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.noted.R
+import com.noted.features.note.presentation.addeditnote.uimodel.ReminderUiModel
 import com.noted.features.reminder.domain.model.Day
 import com.noted.features.reminder.domain.model.Repeat
 import com.noted.features.reminder.domain.model.Time
+import com.noted.ui.components.ErrorText
+import com.vanpra.composematerialdialogs.MaterialDialogScope
+import com.vanpra.composematerialdialogs.datetime.date.datepicker
+import com.vanpra.composematerialdialogs.datetime.time.timepicker
+import com.vanpra.composematerialdialogs.rememberMaterialDialogState
+import java.time.LocalDate
+import java.time.LocalDateTime
+import java.time.LocalTime
 
 @Composable
 fun ReminderDialog(
+    reminderUiModel: ReminderUiModel,
     onDismiss: () -> Unit,
-    onConfirm: (Day, Time, Repeat) -> Unit,
-    onEntered: (Day, Time) -> Unit,
+    onConfirm: (LocalDate, LocalTime, Repeat) -> Unit,
+    onEntered: (LocalDate, LocalTime) -> Unit,
     onDelete: () -> Unit,
     error: Boolean,
     deleteButton: Boolean,
 ) {
-    var day by remember { mutableStateOf(Day.Today) }
-    var time by remember { mutableStateOf(Time.Day) }
     var repeat by remember { mutableStateOf(Repeat.Once) }
+    val nowDate = remember { LocalDate.now() }
+    var pickedDateTime by remember { mutableStateOf(LocalDateTime.now()) }
+    var date by remember { mutableStateOf(reminderUiModel.dateTime.toLocalDate()) }
+    var time by remember { mutableStateOf(reminderUiModel.dateTime.toLocalTime()) }
 
     LaunchedEffect(key1 = error) {
-        onEntered(day, time)
+        onEntered(date, time)
+    }
+
+    fun onPickerOkClicked() {
+        date = pickedDateTime.toLocalDate()
+        time = pickedDateTime.toLocalTime()
+        onEntered(date, time)
     }
 
     AlertDialog(
         onDismissRequest = onDismiss,
         confirmButton = {
             FilledTonalButton(
-                onClick = { onConfirm.invoke(day, time, repeat) },
+                onClick = { onConfirm.invoke(date, time, repeat) },
                 enabled = !error,
             ) {
                 Text(text = stringResource(R.string.noted_save))
@@ -57,37 +75,69 @@ fun ReminderDialog(
         text = {
             Box {
                 Column {
+                    Text(text = reminderUiModel.formattedDateTime)
+
+                    var dateDropdownExpanded by remember { mutableStateOf(false) }
+                    val yearRange = remember { IntRange(nowDate.year, 2100) }
                     ReminderDropdown(
                         items = Day.values(),
-                        onItemSelected = { dayItem ->
-                            day = dayItem
-                            onEntered(day, time)
+                        onOrdinaryItemSelected = { day ->
+                            date = LocalDate.now().plusDays(day.toLong())
+                            time = pickedDateTime.toLocalTime()
+                            onEntered(date, time)
                         },
-                    )
+                        specialItem = Day.OtherDay,
+                        onPickerOkCLicked = ::onPickerOkClicked,
+                        expanded = dateDropdownExpanded,
+                        setExpanded = { dateDropdownExpanded = !dateDropdownExpanded },
+                    ) {
+                        datepicker(
+                            initialDate = pickedDateTime.toLocalDate(),
+                            yearRange = yearRange,
+                            allowedDateValidator = { select -> select >= nowDate },
+                        ) { picked ->
+                            pickedDateTime = LocalDateTime.of(picked, pickedDateTime.toLocalTime())
+                            dateDropdownExpanded = false
+                        }
+                    }
                     Spacer(modifier = Modifier.height(16.dp))
+
+                    var timeDropdownExpanded by remember { mutableStateOf(false) }
                     ReminderDropdown(
                         items = Time.values(),
-                        onItemSelected = { timeItem ->
-                            time = timeItem
-                            onEntered(day, time)
+                        onOrdinaryItemSelected = { timeItem ->
+                            date = pickedDateTime.toLocalDate()
+                            time = LocalTime.of(timeItem.getHour(), timeItem.getMinute())
+                            onEntered(date, time)
                         },
-                        isError = error,
-                    )
+                        specialItem = Time.Other,
+                        onPickerOkCLicked = ::onPickerOkClicked,
+                        expanded = timeDropdownExpanded,
+                        setExpanded = { timeDropdownExpanded = !timeDropdownExpanded },
+                    ) {
+                        timepicker(
+                            initialTime = pickedDateTime.toLocalTime(),
+                            is24HourClock = true,
+                        ) { picked ->
+                            pickedDateTime = LocalDateTime.of(pickedDateTime.toLocalDate(), picked)
+                            timeDropdownExpanded = false
+                        }
+                    }
+
                     if (error) {
-                        Text(
-                            text = stringResource(R.string.reminder_dialog_time_error),
-                            color = MaterialTheme.colorScheme.error,
-                            style = MaterialTheme.typography.labelLarge,
-                        )
+                        ErrorText(text = stringResource(R.string.reminder_dialog_time_error))
                     } else {
                         Spacer(modifier = Modifier.height(16.dp))
                     }
+
+                    var repeatDropdownExpanded by remember { mutableStateOf(false) }
                     ReminderDropdown(
                         items = Repeat.values(),
-                        onItemSelected = { repeatItem ->
+                        onOrdinaryItemSelected = { repeatItem ->
                             repeat = repeatItem
-                            onEntered(day, time)
-                        }
+                        },
+                        expanded = repeatDropdownExpanded,
+                        setExpanded = { repeatDropdownExpanded = !repeatDropdownExpanded },
                     )
 
                     if (deleteButton) {
@@ -96,7 +146,7 @@ fun ReminderDialog(
                             modifier = Modifier.align(Alignment.End)
                         ) {
                             Text(
-                                text = "Delete",
+                                text = stringResource(R.string.noted_delete),
                                 style = MaterialTheme.typography.labelLarge,
                             )
                         }
@@ -111,15 +161,28 @@ fun ReminderDialog(
 @Composable
 private fun <E : Enum<E>> ReminderDropdown(
     items: Array<E>,
-    onItemSelected: (E) -> Unit,
+    onOrdinaryItemSelected: (E) -> Unit,
+    specialItem: E? = null,
+    onPickerOkCLicked: () -> Unit = {},
     isError: Boolean = false,
+    expanded: Boolean,
+    setExpanded: () -> Unit,
+    picker: (@Composable MaterialDialogScope.() -> Unit)? = null,
 ) {
+    val pickerState = rememberMaterialDialogState()
+
     var selectedItem by remember { mutableStateOf(items[0]) }
-    var expanded by remember { mutableStateOf(false) }
+
+    DateTimePicker(
+        state = pickerState,
+        onPickerOkCLicked = onPickerOkCLicked,
+    ) {
+        picker?.invoke(this)
+    }
 
     ExposedDropdownMenuBox(
         expanded = expanded,
-        onExpandedChange = { expanded = !expanded }
+        onExpandedChange = { setExpanded() }
     ) {
         TextField(
             value = selectedItem.name,
@@ -139,15 +202,19 @@ private fun <E : Enum<E>> ReminderDropdown(
 
         ExposedDropdownMenu(
             expanded = expanded,
-            onDismissRequest = { expanded = false }
+            onDismissRequest = setExpanded,
         ) {
             items.forEach { selectedOption ->
                 DropdownMenuItem(
                     text = { Text(text = selectedOption.name) },
                     onClick = {
                         selectedItem = selectedOption
-                        onItemSelected(selectedOption)
-                        expanded = false
+                        if (selectedOption != specialItem) {
+                            onOrdinaryItemSelected(selectedOption)
+                            setExpanded()
+                        } else {
+                            pickerState.show()
+                        }
                     },
                 )
             }

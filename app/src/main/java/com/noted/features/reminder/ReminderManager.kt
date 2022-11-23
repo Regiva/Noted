@@ -34,7 +34,7 @@ class ReminderManager @Inject constructor(
         }
 
         if (canScheduleExactAlarms()) {
-            val triggerTimeInMillis = reminder.dateTimeOfFirstRemind * 1000
+            val triggerTimeInMillis = reminder.epochSecondsOfFirstRemind * 1000
             val interval = reminder.repeat.getAlarmInterval()
             when (reminder.repeat) {
                 Repeat.Once -> {

@@ -5,29 +5,14 @@ import androidx.room.Entity
 import androidx.room.PrimaryKey
 import androidx.room.Relation
 import com.noted.features.note.domain.model.Note
-import java.time.OffsetDateTime
 
 @Entity
 data class Reminder(
     val noteId: Int,
-    val dateTimeOfFirstRemind: Long,
+    val epochSecondsOfFirstRemind: Long,
     val repeat: Repeat = Repeat.Once,
     @PrimaryKey val id: Int? = null,
-) {
-    companion object {
-        fun from(day: Day, time: Time, repeat: Repeat, noteId: Int): Reminder {
-            val offsetDateTime = OffsetDateTime.now()
-                .plusDays(day.toLong())
-                .withHour(time.getHour())
-                .withMinute(time.getMinute())
-            return Reminder(
-                noteId = noteId,
-                dateTimeOfFirstRemind = offsetDateTime.toEpochSecond(),
-                repeat = repeat,
-            )
-        }
-    }
-}
+)
 
 data class NoteWithReminder(
     @Embedded val note: Note,

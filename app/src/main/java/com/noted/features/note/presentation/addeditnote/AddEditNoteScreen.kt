@@ -124,7 +124,7 @@ fun AddEditNoteScreenContent(
                     onClick = { viewModel.onEvent(AddEditNoteScreenEvent.OpenCloseReminderDialog) }
                 ) {
                     Icon(
-                        imageVector = if (state.reminder != null) {
+                        imageVector = if (state.reminderPresent) {
                             NotedIcons.AddAlert
                         } else {
                             NotedIcons.Outlined.AddAlert
@@ -134,22 +134,23 @@ fun AddEditNoteScreenContent(
                     )
                 }
             }
-            if (state.reminderDialogState.visible) {
+            if (state.dialogVisible) {
                 ReminderDialog(
+                    reminderUiModel = state.reminderUi,
                     onDismiss = {
                         viewModel.onEvent(AddEditNoteScreenEvent.OpenCloseReminderDialog)
                     },
-                    onConfirm = { day, time, repeat ->
-                        viewModel.onEvent(AddEditNoteScreenEvent.AddReminder(day, time, repeat))
+                    onConfirm = { pickedDate, pickedTime, repeat ->
+                        viewModel.onEvent(AddEditNoteScreenEvent.AddReminder(pickedDate, pickedTime, repeat))
                     },
-                    onEntered = { day, time ->
-                        viewModel.onEvent(AddEditNoteScreenEvent.EnteredReminder(day, time))
+                    onEntered = { pickedDate, pickedTime ->
+                        viewModel.onEvent(AddEditNoteScreenEvent.EnteredReminder(pickedDate, pickedTime))
                     },
                     onDelete = {
                         viewModel.onEvent(AddEditNoteScreenEvent.DeleteReminder)
                     },
-                    error = state.reminderDialogState.error,
-                    deleteButton = state.reminderDialogState.deleteButton,
+                    error = state.dialogDateTimeError,
+                    deleteButton = state.reminderPresent,
                 )
             }
             ColorSection(

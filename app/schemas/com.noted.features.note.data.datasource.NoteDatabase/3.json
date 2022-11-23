@@ -1,8 +1,8 @@
 {
   "formatVersion": 1,
   "database": {
-    "version": 2,
-    "identityHash": "e024e97c2d7ff39a02821dac14533fbe",
+    "version": 3,
+    "identityHash": "3ed5aaa391f369c2e624f9cb571d4b4b",
     "entities": [
       {
         "tableName": "Note",
@@ -50,7 +50,7 @@
       },
       {
         "tableName": "Reminder",
-        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`noteId` INTEGER NOT NULL, `epochSecondOfFirstRemind` INTEGER NOT NULL, `repeat` TEXT NOT NULL, `id` INTEGER, PRIMARY KEY(`id`))",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`noteId` INTEGER NOT NULL, `epochSecondsOfFirstRemind` INTEGER NOT NULL, `repeat` TEXT NOT NULL, `id` INTEGER, PRIMARY KEY(`id`))",
         "fields": [
           {
             "fieldPath": "noteId",
@@ -59,8 +59,8 @@
             "notNull": true
           },
           {
-            "fieldPath": "epochSecondOfFirstRemind",
-            "columnName": "epochSecondOfFirstRemind",
+            "fieldPath": "epochSecondsOfFirstRemind",
+            "columnName": "epochSecondsOfFirstRemind",
             "affinity": "INTEGER",
             "notNull": true
           },
@@ -90,7 +90,7 @@
     "views": [],
     "setupQueries": [
       "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
-      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, 'e024e97c2d7ff39a02821dac14533fbe')"
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '3ed5aaa391f369c2e624f9cb571d4b4b')"
     ]
   }
 }
